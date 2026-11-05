@@ -23,6 +23,7 @@
 
     <!-- Works on phones, tablets and Android TV (no touchscreen) -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <application
@@ -53,6 +54,10 @@
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="false"
             android:launchMode="singleTop" />
+        <activity
+            android:name=".UsbToolsActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:exported="false" />
         <activity
             android:name=".OfficeActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"

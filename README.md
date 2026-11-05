@@ -60,6 +60,12 @@
 - 📝 **Built-in notepad**: text files open directly. Read, edit and save. Create new `.txt` files with ＋
 - 🎮 **OBB folder** shortcut (Storage → OBB folder) for game data
 
+### 🔌 USB drive tools
+- Finds USB OTG drives, card readers and SD cards, with a live "USB drive connected" alert
+- Works even when the phone doesn't show the drive: read format & size, browse FAT32, copy to phone
+- **Format as FAT32** (no root needed; converts NTFS / exFAT drives too) and **rename the drive**
+- NTFS / exFAT: mount with root; without root use Format as FAT32
+
 ### 🗑️ Recycle Bin
 - Deleted files go to the **Bin** tab first, so you can **see and restore** them
 - *Delete forever* and *Empty Recycle Bin* when you're sure

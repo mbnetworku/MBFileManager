@@ -47,6 +47,9 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
             storageRow(it.label, it.path, if (it.usb) R.drawable.ic_usb else R.drawable.ic_sd, if (it.usb) R.color.t_ppt else R.color.accent)
         }
 
+        row(act.getString(R.string.usb_tools), R.drawable.ic_usb, R.color.t_ppt) {
+            act.closeDrawer(); act.startActivity(android.content.Intent(act, UsbToolsActivity::class.java))
+        }
         section(R.string.quick_access)
         listOf(
             Triple(R.string.downloads, Environment.DIRECTORY_DOWNLOADS, R.drawable.ic_archive to R.color.t_doc),

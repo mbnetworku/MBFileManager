@@ -212,6 +212,7 @@ class HomeFragment : Fragment(), Refreshable {
         })
         tool(R.string.tab_apps, R.drawable.ic_apps_white, R.color.t_apk) { main.selectTab(R.id.nav_apps) }
         tool(R.string.tab_trash, R.drawable.ic_delete, R.color.t_file) { main.selectTab(R.id.nav_trash) }
+        tool(R.string.usb_tools, R.drawable.ic_usb, R.color.t_ppt) { startActivity(android.content.Intent(requireContext(), UsbToolsActivity::class.java)) }
         tool(R.string.appearance, R.drawable.ic_tune, R.color.grad_mid) { DeviceUi.chooseTheme(requireActivity(), main.prefs) }
         tool(R.string.check_updates, R.drawable.ic_open, R.color.accent) { main.checkUpdates() }
         box.addView(card(row).apply { isFocusable = false; isClickable = false; setOnTouchListener(null) })
