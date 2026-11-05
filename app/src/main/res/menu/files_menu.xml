@@ -7,6 +7,7 @@
     <item android:id="@+id/action_done" android:title="@string/done_select" android:visible="false" app:showAsAction="always" />
     <item android:id="@+id/action_select" android:icon="@drawable/ic_check_circle" android:title="@string/select" app:showAsAction="ifRoom" />
     <item android:id="@+id/action_view" android:icon="@drawable/ic_grid" android:title="@string/view_list" app:showAsAction="never" />
+    <item android:id="@+id/action_columns" android:title="@string/columns" app:showAsAction="never" />
     <item android:id="@+id/action_root" android:checkable="true" android:title="@string/root_mode" app:showAsAction="never" />
     <item android:id="@+id/action_hidden" android:checkable="true" android:title="@string/show_hidden" app:showAsAction="never" />
     <item android:id="@+id/action_sort" android:title="@string/sort" app:showAsAction="never" />

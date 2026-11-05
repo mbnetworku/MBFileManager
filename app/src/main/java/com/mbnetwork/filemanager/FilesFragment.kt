@@ -277,12 +277,47 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         adapter.glassColor = DeviceUi.glass(ctx, R.color.card_bg)
         old?.let { adapter.items = it.items }
         val cols = when (mode) {
-            FileAdapter.ICONS -> DeviceUi.iconColumns(ctx)
+            FileAdapter.ICONS -> if (prefs.iconColumns > 0) prefs.iconColumns else DeviceUi.iconColumns(ctx)
             FileAdapter.GRID -> DeviceUi.fileColumns(ctx)
             else -> 1
         }
         recycler.layoutManager = if (cols > 1) GridLayoutManager(ctx, cols) else LinearLayoutManager(ctx)
         recycler.adapter = adapter
+        if (mode == FileAdapter.ICONS) enablePinch()
+    }
+
+    /** Pinch the list: spread = bigger thumbnails (fewer columns), pinch = smaller (more columns). */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun enablePinch() {
+        var acc = 1f
+        val det = android.view.ScaleGestureDetector(requireContext(), object : android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScaleBegin(d: android.view.ScaleGestureDetector): Boolean { acc = 1f; return true }
+            override fun onScale(d: android.view.ScaleGestureDetector): Boolean {
+                acc *= d.scaleFactor
+                val lm = recycler.layoutManager as? GridLayoutManager ?: return true
+                val now = lm.spanCount
+                val next = when { acc > 1.25f -> now - 1; acc < 0.8f -> now + 1; else -> now }.coerceIn(2, 8)
+                if (next != now) { lm.spanCount = next; prefs.iconColumns = next; acc = 1f }
+                return true
+            }
+        })
+        recycler.setOnTouchListener { _, e -> det.onTouchEvent(e); false }
+    }
+
+    private fun chooseColumns() {
+        val opts = listOf(0, 2, 3, 4, 5, 6)
+        val names = opts.map { if (it == 0) getString(R.string.columns_auto) else "$it" }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.columns)
+            .setSingleChoiceItems(names, opts.indexOf(prefs.iconColumns).coerceAtLeast(0)) { dlg, i ->
+                prefs.iconColumns = opts[i]
+                if (prefs.viewMode != 0) prefs.viewMode = 0 // columns apply to the thumbnail view
+                setupList(); requireActivity().invalidateOptionsMenu(); dlg.dismiss()
+            }
+            .setMessage(null)
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+        toast(R.string.columns_hint)
     }
 
     private fun enterSelect(first: FileItem? = null) {
@@ -710,6 +745,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         when (item.itemId) {
             R.id.action_up -> goUp()
             R.id.action_select -> enterSelect()
+            R.id.action_columns -> chooseColumns()
             R.id.action_select_all -> { adapter.selectAll(); updateSelectionUi() }
             R.id.action_done -> exitSelect()
             R.id.action_view -> { prefs.viewMode = if (prefs.viewMode == 0) 1 else 0; setupList(); requireActivity().invalidateOptionsMenu() }

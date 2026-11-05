@@ -150,4 +150,7 @@
     <string name="slide_n">SLIDE %1$d</string>
     <string name="open_office">Open in Office viewer</string>
     <string name="version_label">Version %1$s</string>
+    <string name="columns">Columns</string>
+    <string name="columns_auto">Auto</string>
+    <string name="columns_hint">Tip: pinch the file list to zoom in or out.</string>
 </resources>

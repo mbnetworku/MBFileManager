@@ -27,6 +27,10 @@ class Prefs(context: Context) {
     var liquidGlass: Boolean
         get() = sp.getBoolean("liquid", false)
         set(v) = sp.edit().putBoolean("liquid", v).apply()
+    /** Icon view columns: 0 = auto */
+    var iconColumns: Int
+        get() = sp.getInt("iconCols", 0)
+        set(v) = sp.edit().putInt("iconCols", v).apply()
     var showSystemApps: Boolean
         get() = sp.getBoolean("sysapps", false)
         set(v) = sp.edit().putBoolean("sysapps", v).apply()
