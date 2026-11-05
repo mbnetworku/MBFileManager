@@ -67,11 +67,27 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private var limitPath = internalRoot
     private var currentPath = internalRoot
 
+    private var virtualTitle: String? = null
+    private var virtualLoader: ((android.content.Context) -> List<FileItem>)? = null
+
+    /** Shows a category or search result list (from Home). Back returns to the folder. */
+    fun openCategory(title: String, loader: (android.content.Context) -> List<FileItem>) {
+        if (adapter.selectionMode) exitSelect()
+        virtualTitle = title; virtualLoader = loader
+        refresh()
+    }
+
+    private fun closeCategory() { virtualTitle = null; virtualLoader = null; refresh() }
+
     private data class Clip(val paths: List<String>, val cut: Boolean)
     private var clip: Clip? = null
 
     private val backCallback = object : OnBackPressedCallback(false) {
-        override fun handleOnBackPressed() = if (adapter.selectionMode) exitSelect() else goUp()
+        override fun handleOnBackPressed() = when {
+            adapter.selectionMode -> exitSelect()
+            virtualTitle != null -> closeCategory()
+            else -> goUp()
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -90,6 +106,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         recycler = view.findViewById(R.id.list)
         selectBar = view.findViewById(R.id.selectBar)
         setupList()
+        // The storage card is not shown in Files (it lives on the Home screen)
+        view.findViewById<View>(R.id.appBar).visibility = View.GONE
         // Landscape / short screens: compact header (no usage bar)
         if (resources.configuration.screenHeightDp < 480) {
             storageBar.visibility = View.GONE; headerSub.visibility = View.GONE
@@ -122,6 +140,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
         main.pendingLocation?.let { main.pendingLocation = null; view.post { openLocation(it) } }
+        main.pendingCategory?.let { (t, l) -> main.pendingCategory = null; virtualTitle = t; virtualLoader = l }
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -134,11 +153,27 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (!isAdded) return
         rootBanner.visibility = if (main.rootActive) View.VISIBLE else View.GONE
         if (!main.rootActive && limitPath == "/") { limitPath = internalRoot; currentPath = internalRoot }
-        main.supportActionBar?.title = if (adapter.selectionMode) getString(R.string.n_selected, adapter.selected.size) else getString(R.string.app_name)
-        main.supportActionBar?.subtitle = null
+        main.supportActionBar?.title = when {
+            adapter.selectionMode -> getString(R.string.n_selected, adapter.selected.size)
+            virtualTitle != null -> virtualTitle
+            currentPath == internalRoot -> getString(R.string.internal_storage)
+            else -> File(currentPath).name.ifEmpty { "/" }
+        }
+        main.supportActionBar?.subtitle = if (virtualTitle != null) null else currentPath.replace(internalRoot, getString(R.string.internal_storage))
         updateHeader()
-        backCallback.isEnabled = currentPath != limitPath || adapter.selectionMode
+        backCallback.isEnabled = currentPath != limitPath || adapter.selectionMode || virtualTitle != null
         updateFab()
+        virtualLoader?.let { loader ->
+            swipe.isRefreshing = true
+            val app = requireContext().applicationContext
+            viewLifecycleOwner.lifecycleScope.launch {
+                val list = withContext(Dispatchers.IO) { runCatching { loader(app) }.getOrDefault(emptyList()) }
+                swipe.isRefreshing = false
+                adapter.items = list
+                if (list.isEmpty()) showEmpty(getString(R.string.empty_folder), false) else emptyView.visibility = View.GONE
+            }
+            return
+        }
 
         // Without root and without storage permission there is nothing to show.
         if (!main.rootActive && !PermissionHelper.hasStoragePermission(requireContext())) {
@@ -248,7 +283,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private fun onItemClick(f: FileItem) {
         if (adapter.selectionMode) { adapter.toggle(f); updateSelectionUi(); return }
         when {
-            f.isDir -> navigate(f.path)
+            f.isDir -> { virtualTitle = null; virtualLoader = null; limitPath = if (f.path.startsWith(internalRoot)) internalRoot else limitPath; navigate(f.path) }
             ZipUtil.isZip(f.name) -> confirmExtract(f)
             OfficeDoc.isOffice(f.name) && OfficeDoc.kind(f.name) != "old" -> openOffice(f)
             ApkInstaller.isApk(f.name) -> installApk(f)
@@ -336,7 +371,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         selectBar.visibility = if (on) View.VISIBLE else View.GONE
         fab.visibility = if (on) View.GONE else View.VISIBLE
         backCallback.isEnabled = on || currentPath != limitPath
-        main.supportActionBar?.title = if (on) getString(R.string.n_selected, adapter.selected.size) else getString(R.string.app_name)
+        main.supportActionBar?.title = if (on) getString(R.string.n_selected, adapter.selected.size)
+            else virtualTitle ?: File(currentPath).name.ifEmpty { "/" }
         listOf(R.id.selShare, R.id.selCopy, R.id.selMove, R.id.selZip, R.id.selDelete, R.id.selMore).forEach {
             selectBar.findViewById<View>(it).alpha = if (adapter.selected.isEmpty()) 0.4f else 1f
             selectBar.findViewById<View>(it).isEnabled = adapter.selected.isNotEmpty()
@@ -693,6 +729,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     /** Called from the sidebar. */
     fun openLocation(path: String) {
         if (adapter.selectionMode) exitSelect()
+        virtualTitle = null; virtualLoader = null
         when {
             path == "/" -> if (main.rootActive) { limitPath = "/"; navigate("/") }
                 else main.setRootMode(true) { ok -> if (ok) { limitPath = "/"; navigate("/") } }

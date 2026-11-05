@@ -40,6 +40,7 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
         })
 
         val internal = Environment.getExternalStorageDirectory().absolutePath
+        row(act.getString(R.string.tab_home), R.drawable.ic_home_white, R.color.grad_start) { act.selectTab(R.id.nav_home) }
         section(R.string.storage)
         storageRow(act.getString(R.string.internal_storage), internal, R.drawable.ic_storage, R.color.grad_start)
         Trash.volumes(act).drop(1).forEach { storageRow(act.getString(R.string.sd_card, it.name), it.absolutePath, R.drawable.ic_storage, R.color.accent) }

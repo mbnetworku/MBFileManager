@@ -34,6 +34,12 @@
 
 ## ✨ Features
 
+### 🏠 Home screen
+- Search all files by name
+- Storage cards with usage bars
+- Categories with counts: Images, Videos, Music, Documents, APKs, Archives, Downloads, Large files
+- Recent files with thumbnails, and quick tools
+
 ### 🧭 Sidebar
 - Swipe from the left or tap ☰ to open, and it hides again when you're done
 - All storage with usage bars (internal, SD card, USB), quick folders (Downloads, Camera, Pictures, Music, Videos, Documents), OBB, Recycle Bin, Apps

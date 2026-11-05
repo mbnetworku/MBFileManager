@@ -9,6 +9,7 @@ import java.io.IOException
 /** Recycle Bin: deleted files are moved into a hidden folder on the same storage so they can be restored. */
 object Trash {
     private const val DIR = ".MBFileManagerTrash"
+    const val DIR_NAME = DIR
     private const val META = ".origin"
 
     data class Entry(val file: File, val originalPath: String, val deletedAt: Long)

@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     private val drawerBack = object : androidx.activity.OnBackPressedCallback(false) {
         override fun handleOnBackPressed() = closeDrawer()
     }
-    private var currentTab = R.id.nav_files
+    private var currentTab = R.id.nav_home
 
     override fun onCreate(savedInstanceState: Bundle?) {
         prefs = Prefs(this)
@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         val listener = NavigationBarView.OnItemSelectedListener {
             if (it.itemId != currentTab) {
                 currentTab = it.itemId
-                show(when (it.itemId) { R.id.nav_apps -> AppsFragment(); R.id.nav_trash -> TrashFragment(); else -> FilesFragment() })
+                show(when (it.itemId) { R.id.nav_home -> HomeFragment(); R.id.nav_apps -> AppsFragment(); R.id.nav_trash -> TrashFragment(); else -> FilesFragment() })
             }
             true
         }
@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
         bottomNav = bottom; railNav = rail
         bottom.setOnItemSelectedListener(listener)
         rail.setOnItemSelectedListener(listener)
-        if (savedInstanceState == null) show(FilesFragment())
+        if (savedInstanceState == null) show(HomeFragment()) // start on the Home screen
 
         // Ask for storage permission only if this Android version needs it and it is missing.
         PermissionHelper.requestIfNeeded(this)
@@ -137,6 +137,16 @@ class MainActivity : AppCompatActivity() {
     fun selectTab(id: Int) {
         closeDrawer()
         if (DeviceUi.isLarge(this)) railNav.selectedItemId = id else bottomNav.selectedItemId = id
+    }
+
+    /** Category / search result shown in the Files tab. */
+    var pendingCategory: Pair<String, (android.content.Context) -> List<FileItem>>? = null
+
+    fun openCategory(title: String, loader: (android.content.Context) -> List<FileItem>) {
+        closeDrawer()
+        val f = currentFragment()
+        if (f is FilesFragment) f.openCategory(title, loader)
+        else { pendingCategory = title to loader; selectTab(R.id.nav_files) }
     }
 
     /** Sidebar: open a folder in the Files tab. */

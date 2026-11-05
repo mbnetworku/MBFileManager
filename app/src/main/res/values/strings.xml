@@ -153,4 +153,19 @@
     <string name="columns">Columns</string>
     <string name="columns_auto">Auto</string>
     <string name="columns_hint">Tip: pinch the file list to zoom in or out.</string>
+    <string name="tab_home">Home</string>
+    <string name="categories">Categories</string>
+    <string name="recent_files">Recent files</string>
+    <string name="tools">Tools</string>
+    <string name="search_files">Search files…</string>
+    <string name="search_results">Search: %1$s</string>
+    <string name="nothing_recent">No recent files yet.</string>
+    <string name="free_of">%1$s free of %2$s</string>
+    <string name="cat_images">Images</string>
+    <string name="cat_videos">Videos</string>
+    <string name="cat_music">Music</string>
+    <string name="cat_docs">Documents</string>
+    <string name="cat_apks">APKs</string>
+    <string name="cat_archives">Archives</string>
+    <string name="cat_large">Large files</string>
 </resources>
