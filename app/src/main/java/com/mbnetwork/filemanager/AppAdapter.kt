@@ -1,0 +1,56 @@
+package com.mbnetwork.filemanager
+
+import android.graphics.drawable.Drawable
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+
+data class AppItem(
+    val pkg: String,
+    val label: String,
+    val icon: Drawable?,
+    val isSystem: Boolean,
+    val enabled: Boolean,
+    val installed: Boolean,
+    val sourceDir: String,
+    val version: String
+)
+
+class AppAdapter(private val onClick: (AppItem) -> Unit) : RecyclerView.Adapter<AppAdapter.VH>() {
+
+    var items: List<AppItem> = emptyList()
+        set(v) { field = v; notifyDataSetChanged() }
+
+    class VH(v: View) : RecyclerView.ViewHolder(v) {
+        val icon: ImageView = v.findViewById(R.id.icon)
+        val label: TextView = v.findViewById(R.id.label)
+        val pkg: TextView = v.findViewById(R.id.pkg)
+        val badge: TextView = v.findViewById(R.id.badge)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false))
+
+    override fun getItemCount() = items.size
+
+    override fun onBindViewHolder(h: VH, position: Int) {
+        val a = items[position]
+        val ctx = h.itemView.context
+        h.icon.setImageDrawable(a.icon)
+        h.label.text = a.label
+        h.pkg.text = "${a.pkg}  •  ${a.version}"
+        val badge = when {
+            !a.installed -> ctx.getString(R.string.removed)
+            !a.enabled -> ctx.getString(R.string.disabled)
+            a.isSystem -> ctx.getString(R.string.system)
+            else -> null
+        }
+        h.badge.visibility = if (badge == null) View.GONE else View.VISIBLE
+        h.badge.text = badge
+        h.itemView.alpha = if (a.installed && a.enabled) 1f else 0.55f
+        h.itemView.setOnClickListener { onClick(a) }
+    }
+}

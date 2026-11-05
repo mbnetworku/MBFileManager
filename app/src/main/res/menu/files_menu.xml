@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/action_up" android:icon="@drawable/ic_up" android:title="Up" app:showAsAction="ifRoom" />
+    <item android:id="@+id/action_storage" android:icon="@drawable/ic_storage" android:title="@string/storage" app:showAsAction="ifRoom" />
+    <item android:id="@+id/action_root" android:checkable="true" android:title="@string/root_mode" app:showAsAction="never" />
+    <item android:id="@+id/action_hidden" android:checkable="true" android:title="@string/show_hidden" app:showAsAction="never" />
+    <item android:id="@+id/action_sort" android:title="@string/sort" app:showAsAction="never" />
+    <item android:id="@+id/action_new_file" android:title="@string/new_file" app:showAsAction="never" />
+    <item android:id="@+id/action_refresh" android:title="@string/refresh" app:showAsAction="never" />
+</menu>
