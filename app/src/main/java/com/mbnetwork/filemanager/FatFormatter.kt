@@ -34,6 +34,12 @@ object FatFormatter {
         fun buf() = ByteBuffer.allocate(bs).order(ByteOrder.LITTLE_ENDIAN)
         fun write(lba: Long, b: ByteBuffer) { b.clear(); dev.write(lba, b) }
 
+        // 0) wipe ALL old partition tables (MBR + GPT primary at start, GPT backup at end)
+        //    -> old partitions are merged into one drive
+        val wipe = ByteBuffer.allocate(bs * 64)
+        writeZeros(dev, 0, minOf(START_LBA, totalSectors), wipe)
+        writeZeros(dev, (totalSectors - 64).coerceAtLeast(START_LBA), 64L.coerceAtMost(totalSectors - START_LBA), wipe)
+
         // 1) MBR with one FAT32 (LBA) partition
         val mbr = buf()
         val e = 446
@@ -110,6 +116,55 @@ object FatFormatter {
             done += n
             onProgress?.invoke(done)
         }
+    }
+
+    data class Part(val index: Int, val startLba: Long, val sectors: Long, val fs: String)
+
+    /** Lists partitions (MBR and GPT). A drive without a partition table is one "whole drive" partition. */
+    fun partitions(dev: BlockDeviceDriver): List<Part> {
+        val bs = dev.blockSize
+        val mbr = ByteBuffer.allocate(bs).order(ByteOrder.LITTLE_ENDIAN); dev.read(0, mbr)
+        val a = mbr.array()
+        fun fsAt(lba: Long): String {
+            val s = ByteBuffer.allocate(bs); dev.read(lba, s); val x = s.array()
+            return when {
+                String(x, 3, 8).startsWith("NTFS") -> "NTFS"
+                String(x, 3, 8).startsWith("EXFAT") -> "exFAT"
+                String(x, 82, 5) == "FAT32" -> "FAT32"
+                String(x, 54, 5).startsWith("FAT") -> "FAT16"
+                else -> "Unknown"
+            }
+        }
+        val total = dev.blocks + 1
+        val whole = fsAt(0)
+        if (whole != "Unknown") return listOf(Part(1, 0, total, whole))  // no partition table
+        if ((a[510].toInt() and 0xFF) != 0x55 || (a[511].toInt() and 0xFF) != 0xAA) return emptyList()
+        val out = mutableListOf<Part>()
+        val isGpt = (0 until 4).any { (a[446 + it * 16 + 4].toInt() and 0xFF) == 0xEE }
+        if (isGpt) {
+            val h = ByteBuffer.allocate(bs).order(ByteOrder.LITTLE_ENDIAN); dev.read(1, h)
+            if (String(h.array(), 0, 8) != "EFI PART") return emptyList()
+            val entLba = h.getLong(72); val count = h.getInt(80).coerceAtMost(128); val size = h.getInt(84)
+            val bytes = count * size
+            val e = ByteBuffer.allocate(((bytes + bs - 1) / bs) * bs).order(ByteOrder.LITTLE_ENDIAN); dev.read(entLba, e)
+            for (i in 0 until count) {
+                val o = i * size
+                val empty = (0 until 16).all { e.get(o + it).toInt() == 0 }
+                if (empty) continue
+                val first = e.getLong(o + 32); val last = e.getLong(o + 40)
+                out += Part(out.size + 1, first, last - first + 1, runCatching { fsAt(first) }.getOrDefault("Unknown"))
+            }
+        } else {
+            for (i in 0 until 4) {
+                val o = 446 + i * 16
+                if ((a[o + 4].toInt() and 0xFF) == 0) continue
+                val start = mbr.getInt(o + 8).toLong() and 0xFFFFFFFFL
+                val n = mbr.getInt(o + 12).toLong() and 0xFFFFFFFFL
+                if (n == 0L) continue
+                out += Part(out.size + 1, start, n, runCatching { fsAt(start) }.getOrDefault("Unknown"))
+            }
+        }
+        return out
     }
 
     /** Detects the file system from a partition's first sector. */

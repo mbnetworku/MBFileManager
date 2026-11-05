@@ -182,7 +182,7 @@
     <string name="usb_rename_hint">New drive name (max 11 letters, FAT32 drives).</string>
     <string name="usb_renamed">Drive renamed. Unplug and plug it in again to see the new name.</string>
     <string name="usb_format">Format as FAT32</string>
-    <string name="usb_format_warning">ALL files on \"%1$s\" will be ERASED.\n\nThe drive will be formatted as FAT32 (readable by Android, Windows, Mac, TVs and cars). Enter a drive name:</string>
+    <string name="usb_format_warning">ALL files and ALL partitions on \"%1$s\" will be ERASED. The whole drive becomes one partition.\n\nThe drive will be formatted as FAT32 (readable by Android, Windows, Mac, TVs and cars). Enter a drive name:</string>
     <string name="usb_format_now">Format</string>
     <string name="are_you_sure">Are you sure?</string>
     <string name="usb_format_confirm2">This cannot be undone. Everything on the drive will be deleted.</string>
@@ -206,4 +206,11 @@
     <string name="usb_to_phone">To phone</string>
     <string name="usb_up">Back to parent folder</string>
     <string name="folder">Folder</string>
+    <string name="usb_merge">Merge partitions into one</string>
+    <string name="usb_merge_now">Merge and format</string>
+    <string name="usb_merge_message">Drive \"%1$s\" has these partitions:\n%2$s\n\nALL partitions and ALL files will be DELETED, then ONE FAT32 partition is created using the full %3$s.\n\nName for the merged drive:</string>
+    <string name="usb_merge_single">(This drive has only one partition. This will still erase it and use the full size.)</string>
+    <string name="usb_no_partitions">No readable partition table</string>
+    <string name="usb_partitions">Partitions: %1$d</string>
+    <string name="usb_partition_line">Partition %1$d: %2$s, %3$s</string>
 </resources>

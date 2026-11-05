@@ -131,6 +131,7 @@ class UsbToolsActivity : AppCompatActivity() {
         inner.addView(button(R.string.usb_browse) { withDevice(dev) { _, _ -> browse(dev) } })
         inner.addView(button(R.string.usb_rename) { withDevice(dev) { b, _ -> rename(dev, b) } })
         inner.addView(button(R.string.usb_format, danger = true) { withDevice(dev) { b, _ -> askFormat(dev, b, name) } })
+        inner.addView(button(R.string.usb_merge, danger = true) { withDevice(dev) { b, _ -> askMerge(b, name) } })
         if (RootShell.deviceRooted) inner.addView(button(R.string.usb_mount_root) { mountWithRoot() })
         return card(inner)
     }
@@ -169,8 +170,14 @@ class UsbToolsActivity : AppCompatActivity() {
                     val size = Formatter.formatFileSize(this@UsbToolsActivity, (b.blocks + 1) * b.blockSize)
                     val label = runCatching { dev.partitions.firstOrNull()?.fileSystem?.volumeLabel }.getOrNull().orEmpty()
                     val free = runCatching { dev.partitions.firstOrNull()?.fileSystem?.freeSpace }.getOrNull()
+                    val parts = runCatching { FatFormatter.partitions(b) }.getOrDefault(emptyList())
                     buildString {
                         append("$fs • $size")
+                        append("\n").append(getString(R.string.usb_partitions, parts.size))
+                        parts.forEach { p ->
+                            append("\n  ").append(getString(R.string.usb_partition_line, p.index, p.fs,
+                                Formatter.formatFileSize(this@UsbToolsActivity, p.sectors * b.blockSize)))
+                        }
                         if (label.isNotBlank()) append(" • \"$label\"")
                         if (free != null) append("\n").append(getString(R.string.free_space, Formatter.formatFileSize(this@UsbToolsActivity, free)))
                         if (fs == "NTFS" || fs == "exFAT") append("\n").append(getString(R.string.usb_ntfs_hint))
@@ -375,6 +382,29 @@ class UsbToolsActivity : AppCompatActivity() {
                     .setPositiveButton(R.string.usb_format_now) { _, _ -> doFormat(b, input.text.toString().ifBlank { "USB" }) }
                     .setNegativeButton(R.string.cancel, null).show()
             }.setNegativeButton(R.string.cancel, null).show()
+    }
+
+    /** Merge: delete every partition and create one FAT32 partition over the whole drive. */
+    private fun askMerge(b: BlockDeviceDriver, name: String) {
+        lifecycleScope.launch {
+            val parts = withContext(Dispatchers.IO) { runCatching { FatFormatter.partitions(b) }.getOrDefault(emptyList()) }
+            val total = Formatter.formatFileSize(this@UsbToolsActivity, (b.blocks + 1) * b.blockSize)
+            val list = if (parts.isEmpty()) getString(R.string.usb_no_partitions) else parts.joinToString("\n") {
+                "• " + getString(R.string.usb_partition_line, it.index, it.fs, Formatter.formatFileSize(this@UsbToolsActivity, it.sectors * b.blockSize))
+            }
+            val input = EditText(this@UsbToolsActivity).apply { setText("USB"); setSingleLine(); filters = arrayOf(android.text.InputFilter.LengthFilter(11)) }
+            MaterialAlertDialogBuilder(this@UsbToolsActivity)
+                .setTitle(R.string.usb_merge)
+                .setMessage(getString(R.string.usb_merge_message, name, list, total) +
+                    if (parts.size < 2) "\n\n" + getString(R.string.usb_merge_single) else "")
+                .setView(FrameLayout(this@UsbToolsActivity).apply { setPadding(px(22), 0, px(22), 0); addView(input) })
+                .setPositiveButton(R.string.usb_merge_now) { _, _ ->
+                    MaterialAlertDialogBuilder(this@UsbToolsActivity).setTitle(R.string.are_you_sure).setMessage(R.string.usb_format_confirm2)
+                        .setPositiveButton(R.string.usb_merge_now) { _, _ -> doFormat(b, input.text.toString().ifBlank { "USB" }) }
+                        .setNegativeButton(R.string.cancel, null).show()
+                }
+                .setNegativeButton(R.string.cancel, null).show()
+        }
     }
 
     private fun doFormat(b: BlockDeviceDriver, label: String) {
