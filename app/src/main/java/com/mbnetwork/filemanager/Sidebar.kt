@@ -43,7 +43,9 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
         row(act.getString(R.string.tab_home), R.drawable.ic_home_white, R.color.grad_start) { act.selectTab(R.id.nav_home) }
         section(R.string.storage)
         storageRow(act.getString(R.string.internal_storage), internal, R.drawable.ic_storage, R.color.grad_start)
-        Trash.volumes(act).drop(1).forEach { storageRow(act.getString(R.string.sd_card, it.name), it.absolutePath, R.drawable.ic_storage, R.color.accent) }
+        StorageVolumes.list(act).drop(1).forEach {
+            storageRow(it.label, it.path, if (it.usb) R.drawable.ic_usb else R.drawable.ic_sd, if (it.usb) R.color.t_ppt else R.color.accent)
+        }
 
         section(R.string.quick_access)
         listOf(

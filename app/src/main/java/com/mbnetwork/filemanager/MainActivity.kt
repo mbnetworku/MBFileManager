@@ -130,6 +130,65 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Live detection: USB drive / SD card plugged in or removed. */
+    private var knownVolumes = setOf<String>()
+    private val mediaReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(c: android.content.Context, i: android.content.Intent) {
+            // mounting takes a moment after the USB is attached
+            listOf(400L, 2500L).forEach { drawer.postDelayed({ onVolumesChanged() }, it) }
+        }
+    }
+
+    private fun onVolumesChanged() {
+        if (isFinishing) return
+        val now = StorageVolumes.list(this)
+        val added = now.firstOrNull { it.path !in knownVolumes && knownVolumes.isNotEmpty() }
+        val removed = knownVolumes.size > now.size
+        knownVolumes = now.map { it.path }.toSet()
+        sidebar.build()
+        (currentFragment() as? Refreshable)?.let { if (it is HomeFragment) it.refresh() }
+        if (added != null) {
+            com.google.android.material.snackbar.Snackbar.make(findViewById(R.id.container),
+                getString(R.string.volume_connected, added.label), com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                .setAction(R.string.open) { openLocation(added.path) }.show()
+        } else if (removed) {
+            Toast.makeText(this, R.string.volume_removed, Toast.LENGTH_SHORT).show()
+            val f = currentFragment()
+            if (f is FilesFragment) f.openLocation(android.os.Environment.getExternalStorageDirectory().absolutePath)
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        knownVolumes = StorageVolumes.list(this).map { it.path }.toSet()
+        val media = android.content.IntentFilter().apply {
+            addAction(android.content.Intent.ACTION_MEDIA_MOUNTED)
+            addAction(android.content.Intent.ACTION_MEDIA_UNMOUNTED)
+            addAction(android.content.Intent.ACTION_MEDIA_REMOVED)
+            addAction(android.content.Intent.ACTION_MEDIA_EJECT)
+            addAction(android.content.Intent.ACTION_MEDIA_BAD_REMOVAL)
+            addDataScheme("file")
+        }
+        val usb = android.content.IntentFilter().apply {
+            addAction(android.hardware.usb.UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(android.hardware.usb.UsbManager.ACTION_USB_DEVICE_DETACHED)
+        }
+        androidx.core.content.ContextCompat.registerReceiver(this, mediaReceiver, media, androidx.core.content.ContextCompat.RECEIVER_EXPORTED)
+        androidx.core.content.ContextCompat.registerReceiver(this, usbReceiver, usb, androidx.core.content.ContextCompat.RECEIVER_EXPORTED)
+        onVolumesChanged()
+    }
+
+    private val usbReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(c: android.content.Context, i: android.content.Intent) {
+            listOf(1500L, 4000L, 8000L).forEach { drawer.postDelayed({ onVolumesChanged() }, it) }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        try { unregisterReceiver(mediaReceiver); unregisterReceiver(usbReceiver) } catch (e: Exception) { }
+    }
+
     fun openDrawer() = drawer.openDrawer(GravityCompat.START)
     fun closeDrawer() = drawer.closeDrawer(GravityCompat.START)
     fun checkUpdates() = Updater.check(this, lifecycleScope, manual = true)

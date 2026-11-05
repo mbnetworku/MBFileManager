@@ -17,12 +17,7 @@ object Trash {
     fun isTrashDir(name: String) = name == DIR
 
     /** Internal storage + SD cards / USB drives. */
-    fun volumes(ctx: Context): List<File> {
-        val list = mutableListOf(Environment.getExternalStorageDirectory())
-        ContextCompat.getExternalFilesDirs(ctx, null).drop(1).filterNotNull()
-            .forEach { list += File(it.absolutePath.substringBefore("/Android/data")) }
-        return list
-    }
+    fun volumes(ctx: Context): List<File> = StorageVolumes.list(ctx).map { File(it.path) }
 
     private fun volumeOf(ctx: Context, path: String) =
         volumes(ctx).firstOrNull { path.startsWith(it.absolutePath + "/") }

@@ -61,9 +61,9 @@ class HomeFragment : Fragment(), Refreshable {
         }
         searchBox()
         section(R.string.storage)
-        Trash.volumes(requireContext()).forEachIndexed { i, v ->
-            storageCard(if (i == 0) getString(R.string.internal_storage) else getString(R.string.sd_card, v.name), v.absolutePath,
-                if (i == 0) R.color.grad_start else R.color.accent)
+        StorageVolumes.list(requireContext()).forEachIndexed { i, v ->
+            storageCard(v.label, v.path, if (i == 0) R.color.grad_start else if (v.usb) R.color.t_ppt else R.color.accent,
+                if (i == 0) R.drawable.ic_storage else if (v.usb) R.drawable.ic_usb else R.drawable.ic_sd)
         }
         section(R.string.categories)
         categories()
@@ -116,10 +116,10 @@ class HomeFragment : Fragment(), Refreshable {
         }))
     }
 
-    private fun storageCard(title: String, path: String, color: Int) {
+    private fun storageCard(title: String, path: String, color: Int, icon: Int) {
         val inner = LinearLayout(requireContext()).apply {
             gravity = Gravity.CENTER_VERTICAL; setPadding(px(16), px(14), px(16), px(14))
-            addView(tile(R.drawable.ic_storage, color, px(46)))
+            addView(tile(icon, color, px(46)))
             addView(LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL; setPadding(px(14), 0, 0, 0)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)

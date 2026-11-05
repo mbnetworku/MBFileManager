@@ -157,6 +157,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             adapter.selectionMode -> getString(R.string.n_selected, adapter.selected.size)
             virtualTitle != null -> virtualTitle
             currentPath == internalRoot -> getString(R.string.internal_storage)
+            currentPath == limitPath -> StorageVolumes.list(requireContext()).firstOrNull { it.path == currentPath }?.label ?: File(currentPath).name
             else -> File(currentPath).name.ifEmpty { "/" }
         }
         main.supportActionBar?.subtitle = if (virtualTitle != null) null else currentPath.replace(internalRoot, getString(R.string.internal_storage))

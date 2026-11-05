@@ -168,4 +168,7 @@
     <string name="cat_apks">APKs</string>
     <string name="cat_archives">Archives</string>
     <string name="cat_large">Large files</string>
+    <string name="volume_connected">%1$s connected</string>
+    <string name="volume_removed">Storage removed</string>
+    <string name="usb_readonly">This USB drive is read-only on this Android version. Browsing and copying from it works; writing needs Android 11+ with All files access.</string>
 </resources>
