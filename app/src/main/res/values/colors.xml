@@ -1,8 +1,26 @@
 <resources>
     <color name="brand">#1565C0</color>
     <color name="brand_dark">#0D47A1</color>
-    <color name="accent">#FFA000</color>
-    <color name="folder">#FFB300</color>
-    <color name="file">#607D8B</color>
-    <color name="danger">#D32F2F</color>
+    <color name="grad_start">#1565C0</color>
+    <color name="grad_mid">#1E88E5</color>
+    <color name="grad_end">#00897B</color>
+    <color name="accent">#00BFA5</color>
+    <color name="focus_glow">#FFC400</color>
+    <color name="window_bg">#F2F4FA</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="danger">#E53935</color>
+    <!-- file type colors -->
+    <color name="t_folder">#FFA000</color>
+    <color name="t_image">#43A047</color>
+    <color name="t_video">#E53935</color>
+    <color name="t_audio">#F4511E</color>
+    <color name="t_apk">#00A86B</color>
+    <color name="t_archive">#6D4C41</color>
+    <color name="t_doc">#1E88E5</color>
+    <color name="t_file">#78909C</color>
+    <color name="folder">#FFA000</color>
+    <color name="file">#78909C</color>
+    <color name="badge_system">#FFB300</color>
+    <color name="badge_off">#9E9E9E</color>
 </resources>

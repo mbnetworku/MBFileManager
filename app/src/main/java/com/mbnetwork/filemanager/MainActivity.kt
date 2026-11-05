@@ -1,6 +1,9 @@
 package com.mbnetwork.filemanager
 
 import android.os.Bundle
+import android.view.View
+import com.google.android.material.navigation.NavigationBarView
+import com.google.android.material.navigationrail.NavigationRailView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -15,18 +18,30 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var prefs: Prefs
         private set
+    private var currentTab = R.id.nav_files
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        prefs = Prefs(this)
+        DeviceUi.applyTheme(this, prefs) // White / Black / System, chosen in the menu
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        prefs = Prefs(this)
         setSupportActionBar(findViewById<MaterialToolbar>(R.id.toolbar))
 
-        val nav = findViewById<BottomNavigationView>(R.id.bottomNav)
-        nav.setOnItemSelectedListener {
-            show(if (it.itemId == R.id.nav_apps) AppsFragment() else FilesFragment())
+        // Phone: bottom bar. Tablet / Android TV: side rail.
+        val bottom = findViewById<BottomNavigationView>(R.id.bottomNav)
+        val rail = findViewById<NavigationRailView>(R.id.navRail)
+        val large = DeviceUi.isLarge(this)
+        bottom.visibility = if (large) View.GONE else View.VISIBLE
+        rail.visibility = if (large) View.VISIBLE else View.GONE
+        val listener = NavigationBarView.OnItemSelectedListener {
+            if (it.itemId != currentTab) {
+                currentTab = it.itemId
+                show(when (it.itemId) { R.id.nav_apps -> AppsFragment(); R.id.nav_trash -> TrashFragment(); else -> FilesFragment() })
+            }
             true
         }
+        bottom.setOnItemSelectedListener(listener)
+        rail.setOnItemSelectedListener(listener)
         if (savedInstanceState == null) show(FilesFragment())
 
         // Ask for storage permission only if this Android version needs it and it is missing.

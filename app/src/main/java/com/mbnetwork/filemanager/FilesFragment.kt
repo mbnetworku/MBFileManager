@@ -27,7 +27,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.progressindicator.LinearProgressIndicator
+import android.os.StatFs
+import android.view.Gravity
+import android.widget.HorizontalScrollView
+import android.widget.LinearLayout
+import androidx.recyclerview.widget.GridLayoutManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -45,8 +51,13 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private lateinit var emptyView: View
     private lateinit var emptyText: TextView
     private lateinit var grantButton: Button
-    private lateinit var fab: FloatingActionButton
+    private lateinit var fab: ExtendedFloatingActionButton
     private lateinit var rootBanner: View
+    private lateinit var headerTitle: TextView
+    private lateinit var headerSub: TextView
+    private lateinit var storageBar: LinearProgressIndicator
+    private lateinit var crumbs: LinearLayout
+    private lateinit var crumbScroll: HorizontalScrollView
 
     private val internalRoot: String = Environment.getExternalStorageDirectory().absolutePath
     private var limitPath = internalRoot
@@ -65,11 +76,18 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         emptyText = view.findViewById(R.id.emptyText)
         grantButton = view.findViewById(R.id.grantButton)
         fab = view.findViewById(R.id.fab)
-        rootBanner = view.findViewById(R.id.rootBanner)
+        rootBanner = view.findViewById(R.id.rootChip)
+        headerTitle = view.findViewById(R.id.headerTitle)
+        headerSub = view.findViewById(R.id.headerSub)
+        storageBar = view.findViewById(R.id.storageBar)
+        crumbs = view.findViewById(R.id.crumbs)
+        crumbScroll = view.findViewById(R.id.crumbScroll)
 
-        adapter = FileAdapter(::onItemClick, ::onItemLongClick)
+        // Phone: list. Tablet / TV: grid.
+        val cols = DeviceUi.fileColumns(requireContext())
+        adapter = FileAdapter(cols > 1, ::onItemClick, ::onItemLongClick)
         view.findViewById<RecyclerView>(R.id.list).apply {
-            layoutManager = LinearLayoutManager(requireContext())
+            layoutManager = if (cols > 1) GridLayoutManager(requireContext(), cols) else LinearLayoutManager(requireContext())
             adapter = this@FilesFragment.adapter
         }
         swipe.setOnRefreshListener { refresh() }
@@ -90,8 +108,9 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (!isAdded) return
         rootBanner.visibility = if (main.rootActive) View.VISIBLE else View.GONE
         if (!main.rootActive && limitPath == "/") { limitPath = internalRoot; currentPath = internalRoot }
-        main.supportActionBar?.title = if (currentPath == internalRoot) getString(R.string.internal_storage) else File(currentPath).name.ifEmpty { "/" }
-        main.supportActionBar?.subtitle = currentPath
+        main.supportActionBar?.title = getString(R.string.app_name)
+        main.supportActionBar?.subtitle = null
+        updateHeader()
         backCallback.isEnabled = currentPath != limitPath
         updateFab()
 
@@ -119,7 +138,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     private fun sort(list: List<FileItem>): List<FileItem> {
-        val visible = if (prefs.showHidden) list else list.filterNot { it.isHidden }
+        val visible = (if (prefs.showHidden) list else list.filterNot { it.isHidden }).filterNot { Trash.isTrashDir(it.name) }
         val cmp: Comparator<FileItem> = when (prefs.sort) {
             1 -> compareByDescending { it.size }
             2 -> compareByDescending { it.lastModified }
@@ -135,8 +154,52 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     private fun updateFab() {
-        fab.setImageResource(if (clip != null) R.drawable.ic_paste else R.drawable.ic_add)
-        fab.contentDescription = getString(if (clip != null) R.string.paste else R.string.new_folder)
+        fab.setIconResource(if (clip != null) R.drawable.ic_paste else R.drawable.ic_new_folder)
+        fab.text = getString(if (clip != null) R.string.paste else R.string.new_folder)
+    }
+
+    /** Glossy header: storage name, usage bar and tappable breadcrumb chips. */
+    private fun updateHeader() {
+        headerTitle.text = when {
+            limitPath == "/" -> getString(R.string.root_fs)
+            limitPath == internalRoot -> getString(R.string.internal_storage)
+            else -> File(limitPath).name
+        }
+        try {
+            val st = StatFs(if (limitPath == "/") "/data" else limitPath)
+            val total = st.blockCountLong * st.blockSizeLong
+            val free = st.availableBlocksLong * st.blockSizeLong
+            storageBar.visibility = View.VISIBLE
+            storageBar.progress = if (total > 0) ((total - free) * 100 / total).toInt() else 0
+            headerSub.text = "${Formatter.formatShortFileSize(requireContext(), free)} free of " +
+                Formatter.formatShortFileSize(requireContext(), total)
+        } catch (e: Exception) {
+            storageBar.visibility = View.GONE
+            headerSub.text = currentPath
+        }
+
+        crumbs.removeAllViews()
+        val d = resources.displayMetrics.density
+        val parts = mutableListOf(limitPath)
+        currentPath.removePrefix(limitPath).split('/').filter { it.isNotEmpty() }
+            .forEach { parts += File(parts.last(), it).path }
+        parts.forEachIndexed { i, p ->
+            if (i > 0) crumbs.addView(ImageView(requireContext()).apply {
+                setImageResource(R.drawable.ic_chevron); alpha = 0.8f
+                layoutParams = LinearLayout.LayoutParams((18 * d).toInt(), (18 * d).toInt())
+            })
+            crumbs.addView(TextView(requireContext()).apply {
+                text = if (i == 0) (if (p == "/") "/" else headerTitle.text) else File(p).name
+                setTextColor(0xFFFFFFFF.toInt()); textSize = 13f
+                if (i == parts.size - 1) setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setBackgroundResource(R.drawable.bg_chip)
+                setPadding((12 * d).toInt(), (5 * d).toInt(), (12 * d).toInt(), (5 * d).toInt())
+                gravity = Gravity.CENTER
+                isFocusable = true; isClickable = true
+                setOnClickListener { navigate(p) }
+            })
+        }
+        crumbScroll.post { crumbScroll.fullScroll(View.FOCUS_RIGHT) }
     }
 
     private fun navigate(path: String) { currentPath = path; refresh() }
@@ -198,12 +261,18 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     private fun confirmDelete(f: FileItem) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.delete)
-            .setMessage(getString(R.string.delete_confirm, f.name))
-            .setPositiveButton(R.string.delete) { _, _ -> runOp { ops.delete(f.path) } }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+        val ctx = requireContext().applicationContext
+        val b = MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.delete)
+        if (Trash.canTrash(ctx, f.path) && java.io.File(f.path).canWrite()) {
+            // Default: move to Recycle Bin (restorable). Permanent delete is still available.
+            b.setMessage(getString(R.string.delete_bin_confirm, f.name))
+                .setPositiveButton(R.string.move_to_bin) { _, _ -> runOp { Trash.moveToTrash(ctx, f.path) } }
+                .setNeutralButton(R.string.delete_forever) { _, _ -> runOp { ops.delete(f.path) } }
+        } else {
+            b.setMessage(getString(R.string.delete_confirm, f.name))
+                .setPositiveButton(R.string.delete_forever) { _, _ -> runOp { ops.delete(f.path) } }
+        }
+        b.setNegativeButton(R.string.cancel, null).show()
     }
 
     private fun showDetails(f: FileItem) {
@@ -344,6 +413,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 }.show()
             R.id.action_new_file -> promptName(R.string.new_file) { ops.createFile(currentPath, it) }
             R.id.action_refresh -> refresh()
+            R.id.action_theme -> DeviceUi.chooseTheme(requireActivity(), prefs)
             else -> return false
         }
         return true

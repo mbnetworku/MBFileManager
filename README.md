@@ -40,6 +40,11 @@
 - Create folders and files · show hidden files · sort by name / size / date
 - **Tap an `.apk` to install it**
 
+### 🗑️ Recycle Bin
+- Deleted files go to the **Bin** tab first, so you can **see and restore** them
+- *Delete forever* and *Empty Recycle Bin* when you're sure
+- Only covers files deleted inside this app
+
 ### 📦 App Manager
 - List all apps, with search and a **Show system apps** switch
 - **Install** APKs: *Install APK…* finds every APK on your storage
@@ -59,6 +64,16 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 > ⚠️ Removing important system apps can make your phone unstable. They're removed only for your user and can be **restored** from the app list.
 
 ---
+
+## 📱 Works on every screen
+
+| Device | Layout |
+|---|---|
+| **Phone** | List view with bottom navigation |
+| **Tablet** | Grid view with side navigation rail |
+| **Android TV** | Grid view, remote/D-pad friendly with a glowing focus outline, listed on the TV home screen |
+
+**Theme:** choose **White**, **Black** or **System default** from the menu (⋮ → Theme).
 
 ## 🔐 Permissions: asked only when needed
 

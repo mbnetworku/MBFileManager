@@ -40,7 +40,9 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         swipe = view.findViewById(R.id.swipe)
         view.findViewById<RecyclerView>(R.id.list).apply {
-            layoutManager = LinearLayoutManager(requireContext())
+            val cols = DeviceUi.appColumns(requireContext())
+            layoutManager = if (cols > 1) androidx.recyclerview.widget.GridLayoutManager(requireContext(), cols)
+                else LinearLayoutManager(requireContext())
             adapter = this@AppsFragment.adapter
         }
         swipe.setOnRefreshListener { refresh() }
@@ -233,6 +235,7 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
             R.id.action_root -> main.setRootMode(!main.rootActive) { requireActivity().invalidateOptionsMenu(); applyFilter() }
             R.id.action_refresh -> refresh()
             R.id.action_install -> pickApkToInstall()
+            R.id.action_theme -> DeviceUi.chooseTheme(requireActivity(), prefs)
             else -> return false
         }
         return true

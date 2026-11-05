@@ -13,6 +13,9 @@ class Prefs(context: Context) {
     var sort: Int
         get() = sp.getInt("sort", 0)
         set(v) = sp.edit().putInt("sort", v).apply()
+    var theme: Int
+        get() = sp.getInt("theme", 0)
+        set(v) = sp.edit().putInt("theme", v).apply()
     var showSystemApps: Boolean
         get() = sp.getBoolean("sysapps", false)
         set(v) = sp.edit().putBoolean("sysapps", v).apply()

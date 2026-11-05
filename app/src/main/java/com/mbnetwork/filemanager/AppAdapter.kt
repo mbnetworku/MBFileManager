@@ -32,7 +32,7 @@ class AppAdapter(private val onClick: (AppItem) -> Unit) : RecyclerView.Adapter<
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false))
+        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false).also { DeviceUi.applyFocusEffect(it) })
 
     override fun getItemCount() = items.size
 
@@ -42,12 +42,14 @@ class AppAdapter(private val onClick: (AppItem) -> Unit) : RecyclerView.Adapter<
         h.icon.setImageDrawable(a.icon)
         h.label.text = a.label
         h.pkg.text = "${a.pkg}  •  ${a.version}"
-        val badge = when {
-            !a.installed -> ctx.getString(R.string.removed)
-            !a.enabled -> ctx.getString(R.string.disabled)
-            a.isSystem -> ctx.getString(R.string.system)
-            else -> null
+        val (badge, color) = when {
+            !a.installed -> ctx.getString(R.string.removed) to R.color.danger
+            !a.enabled -> ctx.getString(R.string.disabled) to R.color.badge_off
+            a.isSystem -> ctx.getString(R.string.system) to R.color.badge_system
+            else -> null to R.color.accent
         }
+        androidx.core.view.ViewCompat.setBackgroundTintList(h.badge,
+            android.content.res.ColorStateList.valueOf(androidx.core.content.ContextCompat.getColor(ctx, color)))
         h.badge.visibility = if (badge == null) View.GONE else View.VISIBLE
         h.badge.text = badge
         h.itemView.alpha = if (a.installed && a.enabled) 1f else 0.55f
