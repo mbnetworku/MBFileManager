@@ -58,4 +58,12 @@
     <string name="system_uninstall_confirm">Uninstall system app \"%1$s\" for the current user?\n\nRemoving important system apps can make the device unstable. You can restore it later from this list (Show system apps).</string>
     <string name="system_app_needs_root">This is a system app. It can only be uninstalled with Root mode enabled. You can still disable it from App info.</string>
     <string name="apps_count">%1$d apps</string>
+    <string name="install">Install</string>
+    <string name="install_root">Install silently (root)</string>
+    <string name="install_apk">Install APK…</string>
+    <string name="install_perm_title">Allow installing apps</string>
+    <string name="install_perm_message">To install apps, Android needs you to allow MB File Manager to \"Install unknown apps\".\n\nTap \"Allow\", switch it on, then come back and tap the APK again.</string>
+    <string name="searching_apks">Searching for APK files…</string>
+    <string name="no_apks">No APK files found on your storage.</string>
+    <string name="not_rooted">This device is not rooted. Root features are not available.</string>
 </resources>

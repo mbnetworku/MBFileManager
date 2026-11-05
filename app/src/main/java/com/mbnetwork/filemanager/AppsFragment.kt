@@ -85,7 +85,8 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
 
     private fun applyFilter() {
         val q = query.lowercase()
-        val list = all.filter { (prefs.showSystemApps || !it.isSystem) && (it.installed || prefs.showSystemApps) }
+        // "Removed" system apps are only listed on rooted devices, where they can be restored.
+        val list = all.filter { (prefs.showSystemApps || !it.isSystem) && (it.installed || (prefs.showSystemApps && RootShell.deviceRooted)) }
             .filter { q.isEmpty() || it.label.lowercase().contains(q) || it.pkg.lowercase().contains(q) }
         adapter.items = list
         main.supportActionBar?.subtitle = getString(R.string.apps_count, list.size) +
@@ -103,7 +104,7 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
             }
             if (!a.isSystem) {
                 actions += getString(R.string.app_uninstall) to { uninstallUserApp(a) }
-            } else {
+            } else if (RootShell.deviceRooted) {
                 actions += getString(R.string.app_uninstall_root) to { uninstallSystemApp(a) }
             }
             if (main.rootActive && a.pkg != ctx.packageName) {
@@ -182,6 +183,35 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
         }
     }
 
+    /** Scans storage for APK files and installs the one the user picks. */
+    private fun pickApkToInstall() {
+        if (!PermissionHelper.hasStoragePermission(requireContext())) {
+            PermissionHelper.requestIfNeeded(requireActivity()); return
+        }
+        Toast.makeText(requireContext(), R.string.searching_apks, Toast.LENGTH_SHORT).show()
+        swipe.isRefreshing = true
+        val ctx = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val apks = withContext(Dispatchers.IO) {
+                val roots = mutableListOf(Environment.getExternalStorageDirectory())
+                androidx.core.content.ContextCompat.getExternalFilesDirs(ctx, null).drop(1).filterNotNull()
+                    .forEach { roots += File(it.absolutePath.substringBefore("/Android/data")) }
+                ApkInstaller.findApks(roots)
+            }
+            swipe.isRefreshing = false
+            if (apks.isEmpty()) {
+                Toast.makeText(ctx, R.string.no_apks, Toast.LENGTH_LONG).show(); return@launch
+            }
+            MaterialAlertDialogBuilder(ctx)
+                .setTitle(R.string.install_apk)
+                .setItems(apks.map { "${it.name}\n${it.parent}" }.toTypedArray()) { _, i ->
+                    ApkInstaller.install(requireActivity(), apks[i])
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
+    }
+
     // ---- menu ----
     override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.apps_menu, menu)
@@ -193,6 +223,7 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
 
     override fun onPrepareMenu(menu: Menu) {
         menu.findItem(R.id.action_system).isChecked = prefs.showSystemApps
+        menu.findItem(R.id.action_root).isVisible = RootShell.deviceRooted  // hidden on non-rooted devices
         menu.findItem(R.id.action_root).isChecked = main.rootActive
     }
 
@@ -201,6 +232,7 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
             R.id.action_system -> { prefs.showSystemApps = !prefs.showSystemApps; item.isChecked = prefs.showSystemApps; applyFilter() }
             R.id.action_root -> main.setRootMode(!main.rootActive) { requireActivity().invalidateOptionsMenu(); applyFilter() }
             R.id.action_refresh -> refresh()
+            R.id.action_install -> pickApkToInstall()
             else -> return false
         }
         return true

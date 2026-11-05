@@ -12,6 +12,9 @@ object RootShell {
     @Volatile var granted: Boolean = false
         private set
 
+    /** True only if this device actually has root (an su binary). Root features are hidden otherwise. */
+    val deviceRooted: Boolean by lazy { suBinaryExists() }
+
     fun suBinaryExists(): Boolean {
         val paths = listOf("/system/bin/su", "/system/xbin/su", "/sbin/su", "/su/bin/su",
             "/system/sbin/su", "/vendor/bin/su", "/debug_ramdisk/su")
@@ -21,6 +24,7 @@ object RootShell {
 
     /** Asks the root manager for access (shows its popup). Call off the main thread. */
     fun requestRoot(): Boolean {
+        if (!deviceRooted) { granted = false; return false }
         granted = try { run("id").out.contains("uid=0") } catch (e: Exception) { false }
         return granted
     }

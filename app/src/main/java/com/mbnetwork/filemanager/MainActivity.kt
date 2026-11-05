@@ -32,6 +32,9 @@ class MainActivity : AppCompatActivity() {
         // Ask for storage permission only if this Android version needs it and it is missing.
         PermissionHelper.requestIfNeeded(this)
 
+        // Root features exist only on rooted devices.
+        if (!RootShell.deviceRooted) prefs.rootMode = false
+
         // Re-acquire root if the user enabled root mode earlier.
         if (prefs.rootMode) {
             lifecycleScope.launch {
@@ -61,6 +64,11 @@ class MainActivity : AppCompatActivity() {
         if (!enable) {
             prefs.rootMode = false; done(false); return
         }
+        if (!RootShell.deviceRooted) {
+            prefs.rootMode = false
+            Toast.makeText(this, R.string.not_rooted, Toast.LENGTH_LONG).show()
+            done(false); return
+        }
         lifecycleScope.launch {
             val ok = withContext(Dispatchers.IO) { RootShell.requestRoot() }
             prefs.rootMode = ok
@@ -69,7 +77,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    val rootActive get() = prefs.rootMode && RootShell.granted
+    val rootActive get() = RootShell.deviceRooted && prefs.rootMode && RootShell.granted
 }
 
 interface Refreshable {

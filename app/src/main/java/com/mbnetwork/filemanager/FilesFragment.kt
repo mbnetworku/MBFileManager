@@ -147,12 +147,20 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     private fun onItemClick(f: FileItem) {
-        if (f.isDir) navigate(f.path) else openFile(f, chooser = false)
+        when {
+            f.isDir -> navigate(f.path)
+            ApkInstaller.isApk(f.name) -> installApk(f)
+            else -> openFile(f, chooser = false)
+        }
     }
 
     private fun onItemLongClick(f: FileItem, anchor: View) {
         val popup = PopupMenu(requireContext(), anchor)
         val m = popup.menu
+        if (ApkInstaller.isApk(f.name)) {
+            m.add(0, 8, 0, R.string.install)
+            if (main.rootActive) m.add(0, 9, 0, R.string.install_root)
+        }
         if (!f.isDir) { m.add(0, 1, 0, R.string.open_with); m.add(0, 7, 0, R.string.share) }
         m.add(0, 2, 0, R.string.rename)
         m.add(0, 3, 0, R.string.copy)
@@ -168,6 +176,11 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 5 -> confirmDelete(f)
                 6 -> showDetails(f)
                 7 -> share(f)
+                8 -> installApk(f)
+                9 -> runOp {
+                    val r = ApkInstaller.installSilently(f.path)
+                    if (!r.ok || r.out.contains("Failure")) throw java.io.IOException((r.err + r.out).trim())
+                }
             }
             true
         }
@@ -267,6 +280,16 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         }
     }
 
+    private fun installApk(f: FileItem) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                ApkInstaller.install(requireActivity(), readableCopy(f))
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), getString(R.string.failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun share(f: FileItem) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -285,7 +308,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             val p = it.absolutePath.substringBefore("/Android/data")
             names += getString(R.string.sd_card, File(p).name); paths += p
         }
-        names += getString(R.string.root_fs); paths += "/"
+        if (RootShell.deviceRooted) { names += getString(R.string.root_fs); paths += "/" }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.storage)
             .setItems(names.toTypedArray()) { _, i ->
@@ -301,6 +324,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     override fun onCreateMenu(menu: Menu, inflater: MenuInflater) = inflater.inflate(R.menu.files_menu, menu)
 
     override fun onPrepareMenu(menu: Menu) {
+        menu.findItem(R.id.action_root).isVisible = RootShell.deviceRooted  // hidden on non-rooted devices
         menu.findItem(R.id.action_root).isChecked = main.rootActive
         menu.findItem(R.id.action_hidden).isChecked = prefs.showHidden
     }
