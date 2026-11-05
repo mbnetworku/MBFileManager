@@ -68,4 +68,8 @@ jobs:
       - name: Android 5 (API 21) compatibility check - lint NewApi (report only, runs when the commit message contains [lint])
         if: contains(github.event.head_commit.message, '[lint]')
         continue-on-error: true
-        run: ./gradlew --no-daemon lintRelease
+        run: |
+          ./gradlew --no-daemon lintRelease
+          echo "===== NewApi report (API 21 compatibility) ====="
+          if [ -s app/stdout ]; then cat app/stdout; else echo "No issues found: nothing needs a newer Android than 5.0"; fi
+          echo "===== end of report ====="
