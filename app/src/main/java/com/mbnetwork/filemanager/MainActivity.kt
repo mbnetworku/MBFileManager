@@ -86,6 +86,12 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+        // landscape: keep the pill compact and centered
+        if (resources.configuration.screenWidthDp > 560) (bottom.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
+            width = (440 * resources.displayMetrics.density).toInt()
+            gravity = android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL
+            bottomMargin = (8 * resources.displayMetrics.density).toInt()
+        }
         // floating rounded glass pill, brand blue selection (no purple)
         bottom.background = DeviceUi.pill(this)
         bottom.outlineProvider = android.view.ViewOutlineProvider.BACKGROUND

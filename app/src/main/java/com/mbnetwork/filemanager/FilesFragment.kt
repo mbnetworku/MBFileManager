@@ -90,6 +90,12 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         recycler = view.findViewById(R.id.list)
         selectBar = view.findViewById(R.id.selectBar)
         setupList()
+        // Landscape / short screens: compact header (no usage bar)
+        if (resources.configuration.screenHeightDp < 480) {
+            storageBar.visibility = View.GONE; headerSub.visibility = View.GONE
+            view.findViewById<View>(R.id.header).setPadding((16 * resources.displayMetrics.density).toInt(),
+                (8 * resources.displayMetrics.density).toInt(), (16 * resources.displayMetrics.density).toInt(), (8 * resources.displayMetrics.density).toInt())
+        }
         if (!DeviceUi.isLarge(requireContext())) {
             val dd = resources.displayMetrics.density
             (fab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = (104 * dd).toInt()
@@ -199,7 +205,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             val st = StatFs(if (limitPath == "/") "/data" else limitPath)
             val total = st.blockCountLong * st.blockSizeLong
             val free = st.availableBlocksLong * st.blockSizeLong
-            storageBar.visibility = View.VISIBLE
+            storageBar.visibility = if (resources.configuration.screenHeightDp < 480) View.GONE else View.VISIBLE
             storageBar.progress = if (total > 0) ((total - free) * 100 / total).toInt() else 0
             headerSub.text = "${Formatter.formatShortFileSize(requireContext(), free)} free of " +
                 Formatter.formatShortFileSize(requireContext(), total)
