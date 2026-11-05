@@ -84,6 +84,38 @@ object MusicPlayer {
 
     fun seek(ms: Int) { try { player?.seekTo(ms) } catch (e: Exception) {} }
 
+    /** Plays the song at [i] in the list. */
+    fun playAt(i: Int) {
+        if (i !in queue.indices) return
+        index = i
+        start()
+    }
+
+    /** Removes a song from the list (the file stays). If it is the playing song, the next one plays. */
+    fun removeAt(i: Int) {
+        if (i !in queue.indices) return
+        val wasCurrent = i == index
+        queue = queue.toMutableList().also { it.removeAt(i) }
+        when {
+            queue.isEmpty() -> { stop(); return }
+            wasCurrent -> { index = i.coerceAtMost(queue.size - 1); start(); return }
+            i < index -> index--
+        }
+        changed()
+    }
+
+    /** Deletes the file (Recycle Bin when possible) and removes it from the list. */
+    fun deleteFileAt(i: Int): Boolean {
+        val f = queue.getOrNull(i) ?: return false
+        val c = appContext
+        val ok = try {
+            if (c != null && Trash.canTrash(c, f.absolutePath) && f.canWrite()) { Trash.moveToTrash(c, f.absolutePath); true }
+            else f.delete()
+        } catch (e: Exception) { false }
+        if (ok) removeAt(i)
+        return ok
+    }
+
     fun stop() {
         player?.release(); player = null
         changed()

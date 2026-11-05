@@ -7,16 +7,38 @@
     android:orientation="vertical"
     android:padding="24dp">
 
-    <ImageButton
-        android:id="@+id/btnClose"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_gravity="start"
-        android:background="@drawable/bg_round_btn"
-        android:contentDescription="@string/close"
-        android:padding="12dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/ic_close" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/btnClose"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_round_btn"
+            android:contentDescription="@string/close"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_close" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- playing queue: see the list, tap to play, delete -->
+        <ImageButton
+            android:id="@+id/btnList"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_round_btn"
+            android:contentDescription="@string/playing_queue"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_queue" />
+    </LinearLayout>
 
     <View android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
 

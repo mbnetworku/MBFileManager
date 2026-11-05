@@ -64,7 +64,7 @@
 - Open, share, rename, copy, move, paste, delete, details
 - Create folders and files · show hidden files · sort by name / size / date
 - **Tap an `.apk` to install it**
-- 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek)
+- 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek), album art, a **playing queue** (tap to play, remove or delete songs) and a notification with controls
 - 📝 **Built-in notepad**: text files open directly. Read, edit and save. Create new `.txt` files with ＋
 - 🎮 **OBB folder** shortcut (Storage → OBB folder) for game data
 
@@ -110,6 +110,10 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 | **Android TV** | Grid view, remote/D-pad friendly with a glowing focus outline, listed on the TV home screen |
 
 **Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus **Liquid Glass** (frosted glass cards on a clean white or black background, with touch effects) and a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
+
+## ©️ Copyright
+
+© 2026 **MB Network**. All rights reserved. The same notice, with the open-source notices (libaums, AndroidX, Material, Kotlin: Apache License 2.0), is inside the app under **☰ → About and copyright**.
 
 ## 🔄 Updates
 

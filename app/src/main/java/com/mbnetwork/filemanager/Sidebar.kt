@@ -78,6 +78,12 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
             MusicPlayer.applyNotificationSetting()
         }
         row(act.getString(R.string.check_updates), R.drawable.ic_open, R.color.accent) { act.closeDrawer(); act.checkUpdates() }
+        row(act.getString(R.string.about), R.drawable.ic_info, R.color.t_file) { act.closeDrawer(); About.show(act) }
+        box.addView(TextView(act).apply {
+            text = act.getString(R.string.about_copyright); textSize = 11f; gravity = Gravity.CENTER
+            setTextColor(ContextCompat.getColor(act, R.color.text_secondary))
+            setPadding(px(12), px(18), px(12), px(8))
+        })
     }
 
     private fun section(title: Int) {

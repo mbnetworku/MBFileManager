@@ -227,4 +227,14 @@
     <string name="deselect_all">Deselect All</string>
     <string name="music_notification">Music notification</string>
     <string name="music_notification_hint">Shows the playing song in the notification bar with Previous / Play / Next / Stop. Swipe it away to stop the music.</string>
+    <string name="playing_queue">Playing queue</string>
+    <string name="playing_queue_n">Playing queue • %1$d songs</string>
+    <string name="remove_from_list">Remove from list</string>
+    <string name="delete_from_phone">Delete from phone</string>
+    <string name="about">About and copyright</string>
+    <string name="about_copyright">© 2026 MB Network. All rights reserved.</string>
+    <string name="about_developed">Developed by MB Network</string>
+    <string name="about_notices_title">Open-source components</string>
+    <string name="about_notices">• libaums (USB drives): Apache License 2.0\n• AndroidX and Material Components: Apache License 2.0\n• Kotlin and kotlinx.coroutines: Apache License 2.0</string>
+    <string name="about_trademarks">Names such as Apple, iOS, Windows, Android and other trademarks belong to their owners. This app is not affiliated with or endorsed by them.</string>
 </resources>

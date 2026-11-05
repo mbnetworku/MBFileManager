@@ -4,7 +4,22 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.content.res.ColorStateList
+import android.graphics.Typeface
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
+import androidx.core.content.ContextCompat
+import androidx.core.widget.ImageViewCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -26,6 +41,10 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var cover: android.widget.ImageView
     private var shownCover: String? = null
     private var dragging = false
+    private var queueDialog: BottomSheetDialog? = null
+    private var queueAdapter: QueueAdapter? = null
+    private var queueTitle: TextView? = null
+    private fun px(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     private val notifPermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
         MusicPlayer.refreshNotification()
@@ -58,6 +77,8 @@ class PlayerActivity : AppCompatActivity() {
         repeat = findViewById(R.id.btnRepeat)
 
         findViewById<ImageButton>(R.id.btnClose).setOnClickListener { finish() }
+        findViewById<ImageButton>(R.id.btnList).setOnClickListener { showQueue() }
+        count.setOnClickListener { showQueue() }
         play.setOnClickListener { MusicPlayer.toggle() }
         findViewById<ImageButton>(R.id.btnNext).setOnClickListener { MusicPlayer.next() }
         findViewById<ImageButton>(R.id.btnPrev).setOnClickListener { MusicPlayer.previous() }
@@ -94,6 +115,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun updateUi() {
+        if (!MusicPlayer.active && MusicPlayer.queue.isEmpty()) { queueDialog?.dismiss(); finish(); return }
         val f = MusicPlayer.current
         title.text = f?.nameWithoutExtension ?: "—"
         folder.text = f?.parentFile?.name ?: ""
@@ -103,6 +125,120 @@ class PlayerActivity : AppCompatActivity() {
         shuffle.alpha = if (MusicPlayer.shuffle) 1f else 0.4f
         repeat.alpha = if (MusicPlayer.repeatOne) 1f else 0.4f
         showCover(f)
+        queueAdapter?.notifyDataSetChanged()
+        queueTitle?.text = getString(R.string.playing_queue_n, MusicPlayer.queue.size)
+    }
+
+    // ------------------------------------------------------------------ playing queue
+
+    private fun showQueue() {
+        if (queueDialog != null) return
+        val dlg = BottomSheetDialog(this, R.style.ThemeOverlay_MBFileManager_Sheet)
+        val glass = GlassView(this).apply { setup(window.decorView, radiusDp = 32f, shape = GlassView.SHAPE_TOP, tintAlpha = 0.82f) }
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        col.addView(View(this).apply {
+            background = ContextCompat.getDrawable(context, R.drawable.bg_handle)
+            layoutParams = LinearLayout.LayoutParams(px(40), px(5)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = px(10) }
+        })
+        val title = TextView(this).apply {
+            text = getString(R.string.playing_queue_n, MusicPlayer.queue.size)
+            textSize = 20f; setTypeface(typeface, Typeface.BOLD)
+            setTextColor(ContextCompat.getColor(context, R.color.label))
+            setPadding(px(20), px(14), px(20), px(6))
+        }
+        queueTitle = title
+        col.addView(title)
+        val adapter = QueueAdapter()
+        queueAdapter = adapter
+        val rv = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(context)
+            this.adapter = adapter
+            clipToPadding = false
+            setPadding(px(8), 0, px(8), px(16))
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (resources.displayMetrics.heightPixels * 0.55f).toInt())
+        }
+        col.addView(rv)
+        glass.addView(col)
+        dlg.setContentView(glass)
+        dlg.setOnDismissListener { queueDialog = null; queueAdapter = null; queueTitle = null }
+        queueDialog = dlg
+        dlg.show()
+        dlg.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        rv.scrollToPosition(MusicPlayer.index)
+    }
+
+    /** Remove from the list only, or delete the file from the phone. */
+    private fun confirmRemove(pos: Int) {
+        val f = MusicPlayer.queue.getOrNull(pos) ?: return
+        MaterialAlertDialogBuilder(this)
+            .setTitle(f.nameWithoutExtension)
+            .setItems(arrayOf(getString(R.string.remove_from_list), getString(R.string.delete_from_phone))) { _, i ->
+                if (i == 0) MusicPlayer.removeAt(pos)
+                else {
+                    val toBin = Trash.canTrash(this, f.absolutePath)
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.delete)
+                        .setMessage(getString(if (toBin) R.string.delete_bin_confirm else R.string.delete_confirm, f.name))
+                        .setPositiveButton(if (toBin) R.string.move_to_bin else R.string.delete_forever) { _, _ ->
+                            val at = MusicPlayer.queue.indexOfFirst { it.absolutePath == f.absolutePath }
+                            if (at < 0 || !MusicPlayer.deleteFileAt(at))
+                                android.widget.Toast.makeText(this, getString(R.string.failed, f.name), android.widget.Toast.LENGTH_LONG).show()
+                        }
+                        .setNegativeButton(R.string.cancel, null).show()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null).show()
+    }
+
+    private inner class QueueAdapter : RecyclerView.Adapter<QueueAdapter.VH>() {
+        inner class VH(val row: LinearLayout, val icon: ImageView, val name: TextView, val sub: TextView, val del: ImageButton) :
+            RecyclerView.ViewHolder(row)
+
+        override fun getItemCount() = MusicPlayer.queue.size
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val ctx = this@PlayerActivity
+            val icon = ImageView(ctx).apply { layoutParams = LinearLayout.LayoutParams(px(40), px(40)) }
+            val name = TextView(ctx).apply { textSize = 16f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
+            val sub = TextView(ctx).apply { textSize = 12f; setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary)) }
+            val del = ImageButton(ctx).apply {
+                setImageResource(R.drawable.ic_delete)
+                ImageViewCompat.setImageTintList(this, ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.danger)))
+                background = null
+                contentDescription = getString(R.string.delete)
+                setPadding(px(10), px(10), px(10), px(10))
+                layoutParams = LinearLayout.LayoutParams(px(44), px(44))
+            }
+            val row = LinearLayout(ctx).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                minimumHeight = px(60)
+                setPadding(px(10), px(6), px(4), px(6))
+                layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                val tv = TypedValue(); theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+                setBackgroundResource(tv.resourceId)
+                addView(icon)
+                addView(LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(px(12), 0, px(8), 0)
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    addView(name); addView(sub)
+                })
+                addView(del)
+            }
+            return VH(row, icon, name, sub, del)
+        }
+
+        override fun onBindViewHolder(h: VH, position: Int) {
+            val f = MusicPlayer.queue[position]
+            val current = position == MusicPlayer.index
+            h.name.text = f.nameWithoutExtension
+            h.name.setTextColor(ContextCompat.getColor(h.row.context, if (current) R.color.brand else R.color.label))
+            h.name.setTypeface(null, if (current) Typeface.BOLD else Typeface.NORMAL)
+            h.sub.text = if (current) getString(R.string.now_playing) else f.extension.uppercase()
+            h.icon.setImageDrawable(FileIcons.drawable(FileItem(f.name, f.absolutePath, false, 0, 0)))
+            h.row.setOnClickListener { MusicPlayer.playAt(h.bindingAdapterPosition) }
+            h.del.setOnClickListener { confirmRemove(h.bindingAdapterPosition) }
+        }
     }
 
     /** Album art of the playing song (embedded picture). Songs without a cover show a music note. */
