@@ -20,10 +20,10 @@ Technical details are in [TECHNICAL.md](TECHNICAL.md). User-facing text is in [.
 3. **Do not create a pull request unless asked.** Push to the work branch.
 4. **Colours: no pink or purple.** Palette is iOS system colours; white or true-black backgrounds.
 5. Keep **Android 5 compatibility**: guard newer APIs with `Build.VERSION.SDK_INT`, avoid APIs above 21 without a check.
-6. **AI / editing features are 100 % on-device.** Never add network calls, cloud AI, ML Kit, Firebase or Play Services to them
-   (the CI "Offline guarantee" step fails the build). The owner wants one master switch, **Block internet** (default on, `Net` +
-   `MBApp` global ProxySelector). Any code that uses the internet must go through `Net.blocked(ctx)`. If the owner ever asks for an
-   online AI feature, build it separately (own package, the user's own API key, off while Block internet is on) and update the CI guard on purpose.
+6. **AI features are on-device by default.** The owner wants one switch, **Block internet for AI** (`Prefs.blockAiInternet`, default on, `Net.aiBlocked`).
+   **Updates must never be blocked** (do not add a global network block). Never add network calls, cloud AI, ML Kit, Firebase or Play
+   Services to the existing editing / AI code (the CI "Offline guarantee" step fails the build). If the owner asks for an online AI
+   feature, build it separately (own package, the user's own API key), make it check `Net.aiBlocked` first, and update the CI guard on purpose.
 7. Commit messages end with the attribution lines the harness gives. Do not put model names in code or files.
 
 ## Release routine (every change the owner asks for)

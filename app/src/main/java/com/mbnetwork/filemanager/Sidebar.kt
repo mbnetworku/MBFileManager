@@ -36,7 +36,7 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
                 text = act.getString(R.string.version_label, BuildConfig.VERSION_NAME)
                 setTextColor(ContextCompat.getColor(act, R.color.text_secondary)); textSize = 13f
             })
-            val blocked = Net.blocked(act)
+            val blocked = Net.aiBlocked(act)
             addView(TextView(act).apply {
                 text = act.getString(if (blocked) R.string.net_blocked else R.string.net_allowed)
                 setTextColor(ContextCompat.getColor(act, if (blocked) R.color.t_apk else R.color.t_audio))
@@ -84,8 +84,8 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
             act.prefs.musicNotification = on
             MusicPlayer.applyNotificationSetting()
         }
-        switchRow(act.getString(R.string.offline_mode), R.drawable.ic_lock, R.color.t_apk, act.prefs.offlineMode) { on ->
-            act.prefs.offlineMode = on
+        switchRow(act.getString(R.string.offline_mode), R.drawable.ic_lock, R.color.t_apk, act.prefs.blockAiInternet) { on ->
+            act.prefs.blockAiInternet = on
             box.post { build() }          // refresh the status line
         }
         row(act.getString(R.string.check_updates), R.drawable.ic_open, R.color.accent) { act.closeDrawer(); act.checkUpdates() }

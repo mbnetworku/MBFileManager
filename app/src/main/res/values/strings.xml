@@ -291,13 +291,9 @@
     <string name="ai_cropped_faces">Cropped around the faces</string>
     <string name="ai_cropped_area">Cropped to the most interesting area</string>
     <string name="ai_note">Smart tools run on your phone. Nothing is uploaded.</string>
-    <string name="offline_mode">Block internet</string>
-    <string name="offline_ask_update">Internet is blocked in this app. To check for updates the app must connect to GitHub.</string>
+    <string name="offline_mode">Block internet for AI</string>
     <string name="connect_once">Connect</string>
-    <string name="about_privacy">Privacy: photo, video and smart editing tools work only on your phone and never use the internet, whatever the setting. The app connects to GitHub only to check for updates, and only when Block internet is off or you allow it once.</string>
-    <string name="allow_once">Allow once</string>
-    <string name="turn_block_off">Turn block off</string>
-    <string name="net_blocked">Internet blocked</string>
-    <string name="net_allowed">Internet allowed</string>
-    <string name="net_blocked_toast">Internet is blocked. Turn off "Block internet" to connect.</string>
+    <string name="about_privacy">Privacy: photo, video and smart (AI) editing tools work only on your phone. The switch "Block internet for AI" (on by default) keeps them that way. The app uses the internet only to check for and download updates.</string>
+    <string name="net_blocked">AI: on this phone only</string>
+    <string name="net_allowed">AI: internet allowed</string>
 </resources>

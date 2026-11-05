@@ -46,8 +46,8 @@ class Prefs(context: Context) {
     var micAsked: Boolean
         get() = sp.getBoolean("mic_asked", false)
         set(v) = sp.edit().putBoolean("mic_asked", v).apply()
-    /** Offline mode: the app never connects to the internet by itself. */
-    var offlineMode: Boolean
+    /** Block internet for AI features (on = AI stays on the phone). Updates are not affected. */
+    var blockAiInternet: Boolean
         get() = sp.getBoolean("offline", true)
         set(v) = sp.edit().putBoolean("offline", v).apply()
     var showSystemApps: Boolean

@@ -42,7 +42,6 @@
         android:xlargeScreens="true" />
 
     <application
-        android:name=".MBApp"
         android:allowBackup="true"
         android:banner="@drawable/tv_banner"
         android:icon="@mipmap/ic_launcher"
