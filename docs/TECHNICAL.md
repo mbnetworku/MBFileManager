@@ -124,6 +124,15 @@ player cover scale, equalizer bars. All can be disabled with **Appearance → An
 
 ---
 
+## 5b. Offline guarantee
+
+* The photo / video / AI editing code has **no network code and no online AI library**. CI enforces it: the first step of
+  `build.yml` fails the build if those files reference `java.net`, `HttpURLConnection`, `okhttp`, `WebView`, `http(s)://`, or if
+  `app/build.gradle.kts` lists `mlkit`, `firebase`, `play-services`, `openai`, `anthropic`, `retrofit` or `okhttp`.
+* The only code that uses the internet is `Updater` (GitHub releases). **Offline mode** (`Prefs.offlineMode`, default **on**) disables
+  the automatic daily check; a manual "Check for updates" first asks "Connect once?".
+* The Word viewer's `WebView` has `blockNetworkLoads = true` and JavaScript off.
+
 ## 6. Feature modules
 
 ### Music

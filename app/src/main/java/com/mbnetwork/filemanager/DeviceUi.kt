@@ -213,6 +213,11 @@ object DeviceUi {
             setPadding(0, (8 * d).toInt(), 0, 0)
         }
         box.addView(eqSw)
+        val offlineSw = com.google.android.material.materialswitch.MaterialSwitch(activity).apply {
+            setText(R.string.offline_mode); isChecked = prefs.offlineMode; textSize = 16f
+            setPadding(0, (8 * d).toInt(), 0, 0)
+        }
+        box.addView(offlineSw)
         box.addView(android.widget.TextView(activity).apply { setText(R.string.transparency_hint); alpha = 0.7f })
         MaterialAlertDialogBuilder(activity)
             .setTitle(R.string.appearance)
@@ -224,6 +229,7 @@ object DeviceUi {
                 prefs.theme = newTheme; prefs.transparency = newT; prefs.liquidGlass = liquidSw.isChecked
                 prefs.animations = animSw.isChecked
                 prefs.realEqualizer = eqSw.isChecked
+                prefs.offlineMode = offlineSw.isChecked
                 if (musicSw.isChecked != prefs.musicNotification) { prefs.musicNotification = musicSw.isChecked; MusicPlayer.applyNotificationSetting() }
                 applyTheme(activity, prefs)
                 if (changed) activity.recreate()

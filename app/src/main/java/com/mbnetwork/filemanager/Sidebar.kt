@@ -77,6 +77,9 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
             act.prefs.musicNotification = on
             MusicPlayer.applyNotificationSetting()
         }
+        switchRow(act.getString(R.string.offline_mode), R.drawable.ic_lock, R.color.t_file, act.prefs.offlineMode) { on ->
+            act.prefs.offlineMode = on
+        }
         row(act.getString(R.string.check_updates), R.drawable.ic_open, R.color.accent) { act.closeDrawer(); act.checkUpdates() }
         row(act.getString(R.string.about), R.drawable.ic_info, R.color.t_file) { act.closeDrawer(); About.show(act) }
         box.addView(TextView(act).apply {

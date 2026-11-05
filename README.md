@@ -118,6 +118,12 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 
 **Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus **Liquid Glass** (frosted glass cards on a clean white or black background, with touch effects) and a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
 
+## 🔒 Privacy and offline
+
+Photo, video and smart (AI) editing run **only on your phone** and never use the internet. **Offline mode** (on by default, in ☰ or
+Appearance) stops all automatic internet use; update checks happen only when you tap "Check for updates" and confirm. The build
+fails automatically if network code or an online AI library is ever added to the editing code.
+
 ## 🛠️ Technical documentation
 
 * [`docs/TECHNICAL.md`](docs/TECHNICAL.md): architecture, file map, design system, build / signing / release, limits

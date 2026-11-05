@@ -47,8 +47,21 @@ object Updater {
         }
     }
 
-    /** [manual] = user pressed "Check for updates" (shows "up to date" message). */
+    /**
+     * [manual] = user pressed "Check for updates". In offline mode nothing connects by itself;
+     * a manual check first asks permission to connect once.
+     */
     fun check(activity: Activity, scope: LifecycleCoroutineScope, manual: Boolean) {
+        val offline = Prefs(activity).offlineMode
+        if (!manual) { if (!offline) doCheck(activity, scope, false); return }
+        if (offline) {
+            MaterialAlertDialogBuilder(activity).setTitle(R.string.check_updates).setMessage(R.string.offline_ask_update)
+                .setPositiveButton(R.string.connect_once) { _, _ -> doCheck(activity, scope, true) }
+                .setNegativeButton(R.string.cancel, null).show()
+        } else doCheck(activity, scope, true)
+    }
+
+    private fun doCheck(activity: Activity, scope: LifecycleCoroutineScope, manual: Boolean) {
         val prefs = activity.getSharedPreferences("settings", Activity.MODE_PRIVATE)
         if (!manual && System.currentTimeMillis() - prefs.getLong("lastUpdateCheck", 0) < DAY) return
         if (manual) Toast.makeText(activity, R.string.checking_updates, Toast.LENGTH_SHORT).show()

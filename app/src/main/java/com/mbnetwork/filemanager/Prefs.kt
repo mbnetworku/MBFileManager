@@ -46,6 +46,10 @@ class Prefs(context: Context) {
     var micAsked: Boolean
         get() = sp.getBoolean("mic_asked", false)
         set(v) = sp.edit().putBoolean("mic_asked", v).apply()
+    /** Offline mode: the app never connects to the internet by itself. */
+    var offlineMode: Boolean
+        get() = sp.getBoolean("offline", true)
+        set(v) = sp.edit().putBoolean("offline", v).apply()
     var showSystemApps: Boolean
         get() = sp.getBoolean("sysapps", false)
         set(v) = sp.edit().putBoolean("sysapps", v).apply()

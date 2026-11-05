@@ -20,7 +20,9 @@ Technical details are in [TECHNICAL.md](TECHNICAL.md). User-facing text is in [.
 3. **Do not create a pull request unless asked.** Push to the work branch.
 4. **Colours: no pink or purple.** Palette is iOS system colours; white or true-black backgrounds.
 5. Keep **Android 5 compatibility**: guard newer APIs with `Build.VERSION.SDK_INT`, avoid APIs above 21 without a check.
-6. Commit messages end with the attribution lines the harness gives. Do not put model names in code or files.
+6. **AI / editing features must stay 100 % on-device.** Never add network calls, cloud AI, ML Kit, Firebase or Play Services to
+   them. The CI "Offline guarantee" step will fail the build if you do. The only internet use is `Updater`, and it respects Offline mode.
+7. Commit messages end with the attribution lines the harness gives. Do not put model names in code or files.
 
 ## Release routine (every change the owner asks for)
 1. Edit code. 2. Raise `versionCode` (+1) and `versionName` (`2.9.0.00N`, N+1) in `app/build.gradle.kts`.

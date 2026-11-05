@@ -291,4 +291,8 @@
     <string name="ai_cropped_faces">Cropped around the faces</string>
     <string name="ai_cropped_area">Cropped to the most interesting area</string>
     <string name="ai_note">Smart tools run on your phone. Nothing is uploaded.</string>
+    <string name="offline_mode">Offline mode (no automatic internet use)</string>
+    <string name="offline_ask_update">Offline mode is on. Connect to GitHub once to check for updates?</string>
+    <string name="connect_once">Connect</string>
+    <string name="about_privacy">Privacy: photo, video and smart editing tools work only on your phone and never use the internet. The app connects to GitHub only when you check for updates.</string>
 </resources>

@@ -170,7 +170,11 @@ class OfficeActivity : AppCompatActivity() {
             <style>body{font-family:sans-serif;color:$fg;background:$bg;padding:14px;line-height:1.5;word-wrap:break-word}
             p{margin:0 0 8px}h1,h2,h3{color:#1E88E5}table{border-collapse:collapse;width:100%;margin:8px 0}
             td{border:1px solid $line;padding:6px;vertical-align:top}</style></head><body>$sb</body></html>"""
-        val web = WebView(this).apply { setBackgroundColor(0) }
+        val web = WebView(this).apply {
+            setBackgroundColor(0)
+            settings.blockNetworkLoads = true       // never loads anything from the internet
+            settings.javaScriptEnabled = false
+        }
         web.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
         content.addView(card(web, match = true))
     }
