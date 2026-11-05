@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Recently Deleted is opened from Browse / the sidebar (not a tab any more) -->
+    <item name="nav_trash" type="id" />
+</resources>
