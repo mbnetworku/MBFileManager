@@ -124,8 +124,12 @@ class TextEditorActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menu.add(0, 1, 0, R.string.edit).setIcon(R.drawable.ic_edit).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM).isVisible = !editing
-        menu.add(0, 2, 0, R.string.save).setIcon(R.drawable.ic_save).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM).isVisible = editing
+        menu.add(0, 1, 0, R.string.edit).setIcon(R.drawable.ic_edit).apply {
+            setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM); isVisible = !editing
+        }
+        menu.add(0, 2, 0, R.string.save).setIcon(R.drawable.ic_save).apply {
+            setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM); isVisible = editing
+        }
         menu.add(0, 3, 0, R.string.word_wrap).setCheckable(true).isChecked = !wrapOff
         return true
     }
