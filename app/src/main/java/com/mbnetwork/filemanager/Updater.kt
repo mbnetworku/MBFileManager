@@ -48,20 +48,21 @@ object Updater {
     }
 
     /**
-     * [manual] = user pressed "Check for updates". In offline mode nothing connects by itself;
-     * a manual check first asks permission to connect once.
+     * [manual] = user pressed "Check for updates". While "Block internet" is on, nothing connects by itself;
+     * a manual check offers "Allow once" or "Turn block off".
      */
     fun check(activity: Activity, scope: LifecycleCoroutineScope, manual: Boolean) {
-        val offline = Prefs(activity).offlineMode
-        if (!manual) { if (!offline) doCheck(activity, scope, false); return }
-        if (offline) {
-            MaterialAlertDialogBuilder(activity).setTitle(R.string.check_updates).setMessage(R.string.offline_ask_update)
-                .setPositiveButton(R.string.connect_once) { _, _ -> doCheck(activity, scope, true) }
-                .setNegativeButton(R.string.cancel, null).show()
-        } else doCheck(activity, scope, true)
+        val blocked = Net.blocked(activity)
+        if (!manual) { if (!blocked) doCheck(activity, scope, false); return }
+        if (!blocked) { doCheck(activity, scope, true); return }
+        MaterialAlertDialogBuilder(activity).setTitle(R.string.check_updates).setMessage(R.string.offline_ask_update)
+            .setPositiveButton(R.string.allow_once) { _, _ -> Net.allowFor(180_000); doCheck(activity, scope, true) }
+            .setNeutralButton(R.string.turn_block_off) { _, _ -> Prefs(activity).offlineMode = false; doCheck(activity, scope, true) }
+            .setNegativeButton(R.string.cancel, null).show()
     }
 
     private fun doCheck(activity: Activity, scope: LifecycleCoroutineScope, manual: Boolean) {
+        if (Net.blocked(activity)) { if (manual) Toast.makeText(activity, R.string.net_blocked_toast, Toast.LENGTH_LONG).show(); return }
         val prefs = activity.getSharedPreferences("settings", Activity.MODE_PRIVATE)
         if (!manual && System.currentTimeMillis() - prefs.getLong("lastUpdateCheck", 0) < DAY) return
         if (manual) Toast.makeText(activity, R.string.checking_updates, Toast.LENGTH_SHORT).show()

@@ -36,7 +36,8 @@ object About {
             addView(text(act.getString(R.string.version_label, BuildConfig.VERSION_NAME), 14f, secondary = true))
             addView(text(act.getString(R.string.about_copyright), 15f, bold = true, top = 16))
             addView(text(act.getString(R.string.about_developed), 13f, secondary = true, top = 2))
-            addView(text(act.getString(R.string.about_privacy), 12.5f, secondary = true, top = 16))
+            addView(text(act.getString(if (Net.blocked(act)) R.string.net_blocked else R.string.net_allowed), 14f, bold = true, top = 16))
+            addView(text(act.getString(R.string.about_privacy), 12.5f, secondary = true, top = 6))
             addView(text(act.getString(R.string.about_notices_title), 14f, bold = true, top = 22))
             addView(TextView(act).apply {
                 text = act.getString(R.string.about_notices); textSize = 13f

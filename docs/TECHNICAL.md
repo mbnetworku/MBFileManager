@@ -129,8 +129,12 @@ player cover scale, equalizer bars. All can be disabled with **Appearance → An
 * The photo / video / AI editing code has **no network code and no online AI library**. CI enforces it: the first step of
   `build.yml` fails the build if those files reference `java.net`, `HttpURLConnection`, `okhttp`, `WebView`, `http(s)://`, or if
   `app/build.gradle.kts` lists `mlkit`, `firebase`, `play-services`, `openai`, `anthropic`, `retrofit` or `okhttp`.
-* The only code that uses the internet is `Updater` (GitHub releases). **Offline mode** (`Prefs.offlineMode`, default **on**) disables
-  the automatic daily check; a manual "Check for updates" first asks "Connect once?".
+* **Block internet** (`Prefs.offlineMode`, default **on**) is one master switch (sidebar and Appearance). While it is on:
+  * `Updater` does nothing by itself; a manual "Check for updates" offers **Allow once** (`Net.allowFor`, 3 minutes) or **Turn block off**.
+  * `MBApp` installs a global `ProxySelector` that sends every HTTP(S) connection to a dead proxy, so even code that forgot to
+    check the switch cannot connect.
+* The only code that uses the internet is `Updater` (GitHub releases). Everything else, including all AI / editing tools, is on-device
+  and works with Block internet on or off. There is **no online AI** in the app.
 * The Word viewer's `WebView` has `blockNetworkLoads = true` and JavaScript off.
 
 ## 6. Feature modules

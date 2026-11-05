@@ -118,11 +118,14 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 
 **Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus **Liquid Glass** (frosted glass cards on a clean white or black background, with touch effects) and a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
 
-## 🔒 Privacy and offline
+## 🔒 Block internet
 
-Photo, video and smart (AI) editing run **only on your phone** and never use the internet. **Offline mode** (on by default, in ☰ or
-Appearance) stops all automatic internet use; update checks happen only when you tap "Check for updates" and confirm. The build
-fails automatically if network code or an online AI library is ever added to the editing code.
+One switch (☰ sidebar or Appearance → **Block internet**, **on by default**) decides whether the app may use the internet.
+
+* **Blocked:** the file manager works only on your device. Every connection fails, even by mistake. The sidebar shows "Internet blocked".
+* **Allowed:** the app may connect, for example to check for updates. "Check for updates" also offers **Allow once**.
+* Photo, video and smart (AI) editing run **only on your phone** in both cases. The app has no online AI.
+* The build fails automatically if network code or an online AI library is ever added to the editing code.
 
 ## 🛠️ Technical documentation
 
