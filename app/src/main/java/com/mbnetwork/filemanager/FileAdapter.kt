@@ -34,6 +34,8 @@ class FileAdapter(
         set(v) { field = v; if (!v) selected.clear(); notifyDataSetChanged() }
     val selected = LinkedHashSet<String>()
     var glassColor: Int? = null
+    /** Icon view: number of columns (thumbnail size follows the column width). */
+    var columns = 3
 
     fun toggle(f: FileItem) {
         if (!selected.remove(f.path)) selected += f.path
@@ -102,7 +104,7 @@ class FileAdapter(
         val date = if (f.lastModified > 0) DateFormat.getDateFormat(ctx).format(Date(f.lastModified)) +
             (if (mode == LIST) " " + DateFormat.getTimeFormat(ctx).format(Date(f.lastModified)) else "") else ""
         val size = if (f.isDir) "" else Formatter.formatShortFileSize(ctx, f.size)
-        h.info.text = if (mode == ICONS) listOf(date, size).filter { it.isNotEmpty() }.joinToString("\n")
+        h.info.text = if (mode == ICONS) (if (columns >= 5) size.ifEmpty { date } else listOf(date, size).filter { it.isNotEmpty() }.joinToString("\n"))
             else listOf(size, date).filter { it.isNotEmpty() }.joinToString("  •  ")
         h.itemView.setOnClickListener { onClick(f) }
         h.itemView.setOnLongClickListener { onLongClick(f, it); true }
@@ -112,6 +114,13 @@ class FileAdapter(
     private fun bindIconMode(h: VH, f: FileItem, icon: Int, color: Int) {
         val ctx = h.itemView.context
         val d = ctx.resources.displayMetrics.density
+        // square thumbnail that fits the column (never squeezed)
+        val parentW = (h.itemView.parent as? View)?.width?.takeIf { it > 0 } ?: ctx.resources.displayMetrics.widthPixels
+        val size = ((parentW / columns) - (24 * d)).toInt().coerceIn((48 * d).toInt(), (120 * d).toInt())
+        (h.icon.parent as View).layoutParams = (h.icon.parent as View).layoutParams.apply { width = size; height = size }
+        h.name.maxLines = 2
+        h.name.ellipsize = android.text.TextUtils.TruncateAt.END
+        h.name.textSize = if (columns >= 5) 12f else 14f
         h.icon.clipToOutline = true
         h.icon.outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, 14 * d)

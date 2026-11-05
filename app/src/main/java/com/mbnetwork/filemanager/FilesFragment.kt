@@ -160,7 +160,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             currentPath == limitPath -> StorageVolumes.list(requireContext()).firstOrNull { it.path == currentPath }?.label ?: File(currentPath).name
             else -> File(currentPath).name.ifEmpty { "/" }
         }
-        main.supportActionBar?.subtitle = if (virtualTitle != null) null else currentPath.replace(internalRoot, getString(R.string.internal_storage))
+        main.supportActionBar?.subtitle = if (virtualTitle != null || currentPath == limitPath) null
+            else File(currentPath).parent?.replace(internalRoot, getString(R.string.internal_storage))
         updateHeader()
         backCallback.isEnabled = currentPath != limitPath || adapter.selectionMode || virtualTitle != null
         updateFab()
@@ -313,11 +314,13 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         adapter.glassColor = DeviceUi.glass(ctx, R.color.card_bg)
         old?.let { adapter.items = it.items }
         val cols = when (mode) {
-            FileAdapter.ICONS -> if (prefs.iconColumns > 0) prefs.iconColumns else DeviceUi.iconColumns(ctx)
+            FileAdapter.ICONS -> (if (prefs.iconColumns > 0) prefs.iconColumns else DeviceUi.iconColumns(ctx))
+                .coerceIn(2, DeviceUi.maxIconColumns(ctx))
             FileAdapter.GRID -> DeviceUi.fileColumns(ctx)
             else -> 1
         }
         recycler.layoutManager = if (cols > 1) GridLayoutManager(ctx, cols) else LinearLayoutManager(ctx)
+        adapter.columns = cols
         recycler.adapter = adapter
         if (mode == FileAdapter.ICONS) enablePinch()
     }
@@ -332,8 +335,9 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 acc *= d.scaleFactor
                 val lm = recycler.layoutManager as? GridLayoutManager ?: return true
                 val now = lm.spanCount
-                val next = when { acc > 1.25f -> now - 1; acc < 0.8f -> now + 1; else -> now }.coerceIn(2, 8)
-                if (next != now) { lm.spanCount = next; prefs.iconColumns = next; acc = 1f }
+                val next = when { acc > 1.25f -> now - 1; acc < 0.8f -> now + 1; else -> now }
+                    .coerceIn(2, DeviceUi.maxIconColumns(requireContext()))
+                if (next != now) { lm.spanCount = next; prefs.iconColumns = next; adapter.columns = next; adapter.notifyDataSetChanged(); acc = 1f }
                 return true
             }
         })
@@ -341,7 +345,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     private fun chooseColumns() {
-        val opts = listOf(0, 2, 3, 4, 5, 6)
+        val opts = listOf(0) + (2..DeviceUi.maxIconColumns(requireContext()).coerceAtMost(8)).toList()
         val names = opts.map { if (it == 0) getString(R.string.columns_auto) else "$it" }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.columns)

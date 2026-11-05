@@ -36,9 +36,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:ellipsize="middle"
+        android:breakStrategy="simple"
+        android:ellipsize="end"
         android:gravity="center"
+        android:hyphenationFrequency="none"
         android:maxLines="2"
+        tools:targetApi="23"
+        xmlns:tools="http://schemas.android.com/tools"
         android:textAppearance="?attr/textAppearanceBodyMedium" />
 
     <TextView

@@ -29,6 +29,9 @@ object DeviceUi {
     /** Icon view (like a photo grid): about 115dp per column. */
     fun iconColumns(ctx: Context) = maxOf(3, contentWidthDp(ctx) / 115)
 
+    /** Most columns that still look good: each column at least ~88dp wide. */
+    fun maxIconColumns(ctx: Context) = maxOf(2, contentWidthDp(ctx) / 88)
+
     fun appColumns(ctx: Context) = when {
         isLarge(ctx) -> maxOf(2, contentWidthDp(ctx) / 340)
         ctx.resources.configuration.screenWidthDp >= 560 -> 2 // phone in landscape
