@@ -101,8 +101,10 @@ object DeviceUi {
         return android.graphics.drawable.GradientDrawable().apply {
             cornerRadius = 34 * dd
             val base = androidx.core.content.ContextCompat.getColor(ctx, R.color.card_bg)
-            setColor((base and 0x00FFFFFF) or ((if (liquid(ctx)) 0xC8 else 0xF2) shl 24))
-            setStroke(dd.toInt().coerceAtLeast(1), if (liquid(ctx)) 0x66FFFFFF else 0x22000000)
+            setColor((base and 0x00FFFFFF) or ((if (liquid(ctx)) 0xE6 else 0xF2) shl 24))
+            val night = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+            setStroke(dd.toInt().coerceAtLeast(1), if (night) 0x33FFFFFF else 0x1F000000)
         }
     }
 
@@ -111,7 +113,9 @@ object DeviceUi {
         val ctx = card.context
         card.setCardBackgroundColor(glass(ctx, R.color.card_bg))
         if (liquid(ctx)) {
-            card.strokeColor = 0x55FFFFFF
+            val night = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+            card.strokeColor = if (night) 0x33FFFFFF else 0x1A000000
             card.strokeWidth = ctx.resources.displayMetrics.density.toInt().coerceAtLeast(1)
             card.cardElevation = 0f
         } else {
@@ -166,7 +170,7 @@ object DeviceUi {
     fun glass(ctx: Context, colorRes: Int): Int {
         val c = androidx.core.content.ContextCompat.getColor(ctx, colorRes)
         val p = Prefs(ctx)
-        val t = if (p.liquidGlass) p.transparency.coerceIn(15, 28) else p.transparency
+        val t = if (p.liquidGlass) p.transparency.coerceIn(8, 18) else p.transparency
         val alpha = (255 * (100 - t) / 100).coerceIn(150, 255) // always readable
         return (c and 0x00FFFFFF) or (alpha shl 24)
     }

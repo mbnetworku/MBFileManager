@@ -101,7 +101,7 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 | **Tablet** | Grid view with side navigation rail |
 | **Android TV** | Grid view, remote/D-pad friendly with a glowing focus outline, listed on the TV home screen |
 
-**Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus **Liquid Glass** (frosted see-through surfaces over a soft blue/teal backdrop) and a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
+**Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus **Liquid Glass** (frosted glass cards on a clean white or black background, with touch effects) and a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
 
 ## 🔄 Updates
 
