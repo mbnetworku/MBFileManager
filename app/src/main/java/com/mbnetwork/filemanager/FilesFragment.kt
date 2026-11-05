@@ -9,6 +9,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.MimeTypeMap
 import android.widget.Button
 import android.widget.EditText
@@ -89,6 +90,12 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         recycler = view.findViewById(R.id.list)
         selectBar = view.findViewById(R.id.selectBar)
         setupList()
+        if (!DeviceUi.isLarge(requireContext())) {
+            val dd = resources.displayMetrics.density
+            (fab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = (104 * dd).toInt()
+            (selectBar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = (100 * dd).toInt()
+            recycler.setPadding(recycler.paddingLeft, recycler.paddingTop, recycler.paddingRight, (180 * dd).toInt())
+        }
         view.findViewById<View>(R.id.selShare).setOnClickListener { shareMany(adapter.selectedItems()) }
         view.findViewById<View>(R.id.selCopy).setOnClickListener { setClip(adapter.selectedItems(), false) }
         view.findViewById<View>(R.id.selMove).setOnClickListener { setClip(adapter.selectedItems(), true) }

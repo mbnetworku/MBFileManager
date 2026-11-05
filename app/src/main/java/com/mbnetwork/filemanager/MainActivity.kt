@@ -86,7 +86,16 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
-        bottom.setBackgroundColor(DeviceUi.glass(this, R.color.card_bg))
+        // floating rounded glass pill, brand blue selection (no purple)
+        bottom.background = DeviceUi.pill(this)
+        bottom.outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
+        bottom.clipToOutline = true
+        val sel = android.content.res.ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+            intArrayOf(androidx.core.content.ContextCompat.getColor(this, R.color.grad_start),
+                androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary)))
+        bottom.itemIconTintList = sel; bottom.itemTextColor = sel
+        rail.itemIconTintList = sel; rail.itemTextColor = sel
         rail.setBackgroundColor(DeviceUi.glass(this, R.color.card_bg))
         bottomNav = bottom; railNav = rail
         bottom.setOnItemSelectedListener(listener)

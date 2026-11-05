@@ -46,6 +46,10 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
             adapter = this@AppsFragment.adapter
         }
         swipe.setOnRefreshListener { refresh() }
+        if (!DeviceUi.isLarge(requireContext())) view.findViewById<RecyclerView>(R.id.list).apply {
+            clipToPadding = false
+            setPadding(paddingLeft, paddingTop, paddingRight, (100 * resources.displayMetrics.density).toInt())
+        }
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 

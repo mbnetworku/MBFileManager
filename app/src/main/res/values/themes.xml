@@ -30,4 +30,11 @@
     <style name="MBSheet" parent="Widget.Material3.BottomSheet.Modal">
         <item name="backgroundTint">@android:color/transparent</item>
     </style>
+    <style name="GlassIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">#401E88E5</item>
+        <item name="shapeAppearance">@style/GlassIndicatorShape</item>
+    </style>
+    <style name="GlassIndicatorShape">
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>

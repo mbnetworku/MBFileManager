@@ -78,26 +78,21 @@ object DeviceUi {
 
     fun liquid(ctx: Context) = Prefs(ctx).liquidGlass
 
-    /** Liquid Glass backdrop: soft blue / teal / cyan light blobs (no pink). */
+    /** Liquid Glass backdrop: smooth blue / teal / cyan glows (no pink, no hard edges). */
     fun liquidBackground(ctx: Context): android.graphics.drawable.Drawable {
-        val dm = ctx.resources.displayMetrics
         val night = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
-        val base = android.graphics.drawable.GradientDrawable(
-            android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
-            if (night) intArrayOf(0xFF02040A.toInt(), 0xFF061A33.toInt()) else intArrayOf(0xFFE8F1FF.toInt(), 0xFFD3ECF0.toInt()))
-        fun blob(c: Int) = android.graphics.drawable.GradientDrawable().apply {
-            gradientType = android.graphics.drawable.GradientDrawable.RADIAL_GRADIENT
-            gradientRadius = maxOf(dm.widthPixels, dm.heightPixels) * 0.45f
-            colors = intArrayOf(c, c and 0x00FFFFFF)
-        }
-        val a = if (night) 0x66 else 0x88
-        val layers = arrayOf(base, blob((a shl 24) or 0x1E88E5), blob((a shl 24) or 0x00BFA5), blob((a shl 24) or 0x26C6DA))
-        return android.graphics.drawable.LayerDrawable(layers).apply {
-            val w = dm.widthPixels; val h = dm.heightPixels
-            setLayerInset(1, -w / 2, -h / 6, w / 3, h / 2)
-            setLayerInset(2, w / 3, h / 3, -w / 2, -h / 6)
-            setLayerInset(3, -w / 4, h / 2, w / 4, -h / 3)
+        return LiquidBackdrop(night)
+    }
+
+    /** Floating rounded glass pill (bottom bar). */
+    fun pill(ctx: Context): android.graphics.drawable.Drawable {
+        val dd = ctx.resources.displayMetrics.density
+        return android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 34 * dd
+            val base = androidx.core.content.ContextCompat.getColor(ctx, R.color.card_bg)
+            setColor((base and 0x00FFFFFF) or ((if (liquid(ctx)) 0xC8 else 0xF2) shl 24))
+            setStroke(dd.toInt().coerceAtLeast(1), if (liquid(ctx)) 0x66FFFFFF else 0x22000000)
         }
     }
 
