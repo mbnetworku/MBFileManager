@@ -16,6 +16,14 @@ class Prefs(context: Context) {
     var theme: Int
         get() = sp.getInt("theme", 0)
         set(v) = sp.edit().putInt("theme", v).apply()
+    /** 0 = Icons (thumbnails), 1 = List */
+    var viewMode: Int
+        get() = sp.getInt("view", 0)
+        set(v) = sp.edit().putInt("view", v).apply()
+    /** 0..70 percent see-through */
+    var transparency: Int
+        get() = sp.getInt("transparency", 15)
+        set(v) = sp.edit().putInt("transparency", v).apply()
     var showSystemApps: Boolean
         get() = sp.getBoolean("sysapps", false)
         set(v) = sp.edit().putBoolean("sysapps", v).apply()

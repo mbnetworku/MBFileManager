@@ -40,6 +40,8 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+        bottom.setBackgroundColor(DeviceUi.glass(this, R.color.card_bg))
+        rail.setBackgroundColor(DeviceUi.glass(this, R.color.card_bg))
         bottom.setOnItemSelectedListener(listener)
         rail.setOnItemSelectedListener(listener)
         if (savedInstanceState == null) show(FilesFragment())

@@ -48,6 +48,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private val ops get() = FileOps(main.rootActive)
 
     private lateinit var adapter: FileAdapter
+    private lateinit var recycler: RecyclerView
+    private lateinit var selectBar: View
     private lateinit var swipe: SwipeRefreshLayout
     private lateinit var emptyView: View
     private lateinit var emptyText: TextView
@@ -68,7 +70,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private var clip: Clip? = null
 
     private val backCallback = object : OnBackPressedCallback(false) {
-        override fun handleOnBackPressed() = goUp()
+        override fun handleOnBackPressed() = if (adapter.selectionMode) exitSelect() else goUp()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -84,13 +86,15 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         crumbs = view.findViewById(R.id.crumbs)
         crumbScroll = view.findViewById(R.id.crumbScroll)
 
-        // Phone: list. Tablet / TV: grid.
-        val cols = DeviceUi.fileColumns(requireContext())
-        adapter = FileAdapter(cols > 1, ::onItemClick, ::onItemLongClick)
-        view.findViewById<RecyclerView>(R.id.list).apply {
-            layoutManager = if (cols > 1) GridLayoutManager(requireContext(), cols) else LinearLayoutManager(requireContext())
-            adapter = this@FilesFragment.adapter
-        }
+        recycler = view.findViewById(R.id.list)
+        selectBar = view.findViewById(R.id.selectBar)
+        setupList()
+        view.findViewById<View>(R.id.selShare).setOnClickListener { shareMany(adapter.selectedItems()) }
+        view.findViewById<View>(R.id.selCopy).setOnClickListener { setClip(adapter.selectedItems(), false) }
+        view.findViewById<View>(R.id.selMove).setOnClickListener { setClip(adapter.selectedItems(), true) }
+        view.findViewById<View>(R.id.selZip).setOnClickListener { zipItems(adapter.selectedItems()) }
+        view.findViewById<View>(R.id.selDelete).setOnClickListener { confirmDeleteMany(adapter.selectedItems()) }
+        view.findViewById<View>(R.id.selMore).setOnClickListener { adapter.selectedItems().takeIf { it.isNotEmpty() }?.let { showSheet(it) } }
         swipe.setOnRefreshListener { refresh() }
         grantButton.setOnClickListener { PermissionHelper.requestIfNeeded(requireActivity()) }
         fab.setOnClickListener {
@@ -116,10 +120,10 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (!isAdded) return
         rootBanner.visibility = if (main.rootActive) View.VISIBLE else View.GONE
         if (!main.rootActive && limitPath == "/") { limitPath = internalRoot; currentPath = internalRoot }
-        main.supportActionBar?.title = getString(R.string.app_name)
+        main.supportActionBar?.title = if (adapter.selectionMode) getString(R.string.n_selected, adapter.selected.size) else getString(R.string.app_name)
         main.supportActionBar?.subtitle = null
         updateHeader()
-        backCallback.isEnabled = currentPath != limitPath
+        backCallback.isEnabled = currentPath != limitPath || adapter.selectionMode
         updateFab()
 
         // Without root and without storage permission there is nothing to show.
@@ -228,8 +232,10 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     private fun onItemClick(f: FileItem) {
+        if (adapter.selectionMode) { adapter.toggle(f); updateSelectionUi(); return }
         when {
             f.isDir -> navigate(f.path)
+            ZipUtil.isZip(f.name) -> confirmExtract(f)
             ApkInstaller.isApk(f.name) -> installApk(f)
             MusicPlayer.isAudio(f.name) -> playMusic(f)
             TextEditorActivity.isText(f.name) -> openText(f, edit = false)
@@ -237,43 +243,251 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         }
     }
 
+    /** Long-press: in Select mode toggles the item, otherwise opens the action sheet for it. */
     private fun onItemLongClick(f: FileItem, anchor: View) {
-        val popup = PopupMenu(requireContext(), anchor)
-        val m = popup.menu
-        if (ApkInstaller.isApk(f.name)) {
-            m.add(0, 8, 0, R.string.install)
-            if (main.rootActive) m.add(0, 9, 0, R.string.install_root)
+        if (adapter.selectionMode) { adapter.toggle(f); updateSelectionUi() } else showSheet(listOf(f))
+    }
+
+    // ---------- view modes & selection ----------
+    private fun setupList() {
+        val ctx = requireContext()
+        val large = DeviceUi.isLarge(ctx)
+        val mode = when {
+            prefs.viewMode == 0 -> FileAdapter.ICONS
+            large -> FileAdapter.GRID
+            else -> FileAdapter.LIST
         }
-        if (!f.isDir) {
-            if (MusicPlayer.isAudio(f.name)) m.add(0, 10, 0, R.string.play_music)
-            m.add(0, 11, 0, R.string.open_text)
-            m.add(0, 1, 0, R.string.open_with); m.add(0, 7, 0, R.string.share)
+        val old = if (::adapter.isInitialized) adapter else null
+        adapter = FileAdapter(mode, ::onItemClick, ::onItemLongClick)
+        adapter.glassColor = DeviceUi.glass(ctx, R.color.card_bg)
+        old?.let { adapter.items = it.items }
+        val cols = when (mode) {
+            FileAdapter.ICONS -> DeviceUi.iconColumns(ctx)
+            FileAdapter.GRID -> DeviceUi.fileColumns(ctx)
+            else -> 1
         }
-        m.add(0, 2, 0, R.string.rename)
-        m.add(0, 3, 0, R.string.copy)
-        m.add(0, 4, 0, R.string.cut)
-        m.add(0, 5, 0, R.string.delete)
-        m.add(0, 6, 0, R.string.details)
-        popup.setOnMenuItemClickListener {
-            when (it.itemId) {
-                1 -> openFile(f, chooser = true)
-                2 -> promptName(R.string.rename, f.name) { n -> ops.rename(f.path, n) }
-                3 -> { clip = Clip(listOf(f.path), false); updateFab(); toast(R.string.paste) }
-                4 -> { clip = Clip(listOf(f.path), true); updateFab(); toast(R.string.paste) }
-                5 -> confirmDelete(f)
-                6 -> showDetails(f)
-                7 -> share(f)
-                8 -> installApk(f)
-                10 -> playMusic(f)
-                11 -> openText(f, edit = false)
-                9 -> runOp {
-                    val r = ApkInstaller.installSilently(f.path)
-                    if (!r.ok || r.out.contains("Failure")) throw java.io.IOException((r.err + r.out).trim())
-                }
+        recycler.layoutManager = if (cols > 1) GridLayoutManager(ctx, cols) else LinearLayoutManager(ctx)
+        recycler.adapter = adapter
+    }
+
+    private fun enterSelect(first: FileItem? = null) {
+        adapter.selectionMode = true
+        first?.let { adapter.toggle(it) }
+        updateSelectionUi()
+    }
+
+    private fun exitSelect() {
+        adapter.selectionMode = false
+        updateSelectionUi()
+    }
+
+    private fun updateSelectionUi() {
+        val on = adapter.selectionMode
+        selectBar.visibility = if (on) View.VISIBLE else View.GONE
+        fab.visibility = if (on) View.GONE else View.VISIBLE
+        backCallback.isEnabled = on || currentPath != limitPath
+        main.supportActionBar?.title = if (on) getString(R.string.n_selected, adapter.selected.size) else getString(R.string.app_name)
+        listOf(R.id.selShare, R.id.selCopy, R.id.selMove, R.id.selZip, R.id.selDelete, R.id.selMore).forEach {
+            selectBar.findViewById<View>(it).alpha = if (adapter.selected.isEmpty()) 0.4f else 1f
+            selectBar.findViewById<View>(it).isEnabled = adapter.selected.isNotEmpty()
+        }
+        requireActivity().invalidateOptionsMenu()
+    }
+
+    private fun setClip(items: List<FileItem>, cut: Boolean) {
+        if (items.isEmpty()) return
+        clip = Clip(items.map { it.path }, cut)
+        exitSelect(); updateFab()
+        Toast.makeText(requireContext(), R.string.paste, Toast.LENGTH_SHORT).show()
+    }
+
+    // ---------- zip ----------
+    private fun zipItems(items: List<FileItem>) {
+        if (items.isEmpty()) return
+        val base = if (items.size == 1) items[0].name.substringBeforeLast('.').ifEmpty { items[0].name } else "Archive"
+        val dir = currentPath
+        promptName(R.string.zip_name, "$base.zip") { raw ->
+            val name = if (raw.lowercase().endsWith(".zip")) raw.dropLast(4) else raw
+            ZipUtil.zip(items.map { File(it.path) }, ZipUtil.uniqueName(File(dir), name, ".zip"))
+        }
+        exitSelect()
+    }
+
+    private fun confirmExtract(f: FileItem) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.extract)
+            .setMessage(getString(R.string.extract_confirm, f.name))
+            .setPositiveButton(R.string.extract) { _, _ -> extract(f) }
+            .setNeutralButton(R.string.open_with) { _, _ -> openFile(f, chooser = true) }
+            .setNegativeButton(R.string.cancel, null).show()
+    }
+
+    private fun extract(f: FileItem) {
+        val parent = File(f.path).parentFile ?: return
+        runOp {
+            val dest = ZipUtil.uniqueName(parent, f.name.substringBeforeLast('.'), "")
+            ZipUtil.unzip(File(f.path), dest)
+        }
+    }
+
+    // ---------- share many ----------
+    private fun shareIntent(items: List<FileItem>): Intent? {
+        val files = items.filter { !it.isDir }
+        if (files.isEmpty()) return null
+        val auth = "${requireContext().packageName}.fileprovider"
+        val uris = ArrayList(files.map { FileProvider.getUriForFile(requireContext(), auth, File(it.path)) })
+        val types = files.map { mime(it.name) }.distinct()
+        val type = if (types.size == 1) types[0] else "*/*"
+        return (if (uris.size == 1) Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, uris[0])
+            else Intent(Intent.ACTION_SEND_MULTIPLE).putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris))
+            .setType(type).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+
+    private fun shareMany(items: List<FileItem>) {
+        val i = shareIntent(items) ?: return
+        try { startActivity(Intent.createChooser(i, getString(R.string.share))) } catch (e: Exception) { toast(R.string.no_app_to_open) }
+    }
+
+    // ---------- action sheet (bottom panel) ----------
+    private fun showSheet(items: List<FileItem>) {
+        val ctx = requireContext()
+        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx, R.style.ThemeOverlay_MBFileManager_Sheet)
+        val v = layoutInflater.inflate(R.layout.sheet_actions, null)
+        v.background?.mutate()?.alpha = (255 * (100 - prefs.transparency) / 100).coerceIn(110, 255)
+        sheet.setContentView(v)
+        val single = items.singleOrNull()
+        val d = resources.displayMetrics.density
+
+        // header
+        val icon = v.findViewById<ImageView>(R.id.sheetIcon)
+        val (ic, col) = FileAdapter.typeOf(items[0])
+        icon.setImageResource(ic)
+        androidx.core.widget.ImageViewCompat.setImageTintList(icon, android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt()))
+        androidx.core.view.ViewCompat.setBackgroundTintList(icon, android.content.res.ColorStateList.valueOf(ContextCompat.getColor(ctx, col)))
+        val pad = (10 * d).toInt(); icon.setPadding(pad, pad, pad, pad)
+        icon.clipToOutline = true
+        if (ThumbLoader.canThumb(items[0].name)) ThumbLoader.load(ctx, items[0].path, icon) {
+            androidx.core.widget.ImageViewCompat.setImageTintList(icon, null); icon.setPadding(0, 0, 0, 0)
+            icon.scaleType = ImageView.ScaleType.CENTER_CROP
+        }
+        v.findViewById<TextView>(R.id.sheetTitle).text = single?.name ?: getString(R.string.n_items, items.size)
+        val sub = v.findViewById<TextView>(R.id.sheetSub)
+        sub.setText(R.string.calculating)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val total = withContext(Dispatchers.IO) { items.sumOf { if (it.isDir) File(it.path).walkTopDown().filter { f -> f.isFile }.sumOf { f -> f.length() } else it.size } }
+            sub.text = Formatter.formatShortFileSize(ctx, total) + if (single != null) "  •  " + (single.path.substringBeforeLast('/')) else ""
+        }
+        v.findViewById<View>(R.id.sheetClose).setOnClickListener { sheet.dismiss() }
+
+        // apps row (share targets)
+        val row = v.findViewById<LinearLayout>(R.id.appsRow)
+        val share = shareIntent(items)
+        if (share == null) v.findViewById<View>(R.id.appsScroll).visibility = View.GONE else {
+            @Suppress("DEPRECATION")
+            val targets = ctx.packageManager.queryIntentActivities(share, 0).take(12)
+            targets.forEach { ri ->
+                row.addView(LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
+                    setBackgroundResource(R.drawable.bg_app_target); isFocusable = true; isClickable = true
+                    setPadding((6 * d).toInt(), (4 * d).toInt(), (6 * d).toInt(), (4 * d).toInt())
+                    layoutParams = LinearLayout.LayoutParams((76 * d).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
+                    addView(ImageView(ctx).apply {
+                        setImageDrawable(ri.loadIcon(ctx.packageManager))
+                        layoutParams = LinearLayout.LayoutParams((52 * d).toInt(), (52 * d).toInt())
+                    })
+                    addView(TextView(ctx).apply {
+                        text = ri.loadLabel(ctx.packageManager); textSize = 11f; maxLines = 2
+                        gravity = Gravity.CENTER; setPadding(0, (4 * d).toInt(), 0, 0)
+                    })
+                    setOnClickListener {
+                        sheet.dismiss()
+                        try { startActivity(Intent(share).setClassName(ri.activityInfo.packageName, ri.activityInfo.name)) }
+                        catch (e: Exception) { toast(R.string.no_app_to_open) }
+                    }
+                })
             }
-            true
         }
-        popup.show()
+
+        // action rows
+        fun addRow(group: LinearLayout, text: Int, iconRes: Int, danger: Boolean = false, act: () -> Unit) {
+            if (group.childCount > 0) group.addView(View(ctx).apply {
+                setBackgroundColor(ContextCompat.getColor(ctx, R.color.row_divider))
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { marginStart = (16 * d).toInt() }
+            })
+            val color = if (danger) ContextCompat.getColor(ctx, R.color.danger) else ContextCompat.getColor(ctx, R.color.text_secondary)
+            group.addView(LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                setBackgroundResource(R.drawable.bg_app_target); isFocusable = true; isClickable = true
+                minimumHeight = (52 * d).toInt()
+                setPadding((16 * d).toInt(), 0, (16 * d).toInt(), 0)
+                addView(TextView(ctx).apply {
+                    setText(text); textSize = 16f
+                    if (danger) setTextColor(color)
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                })
+                addView(ImageView(ctx).apply {
+                    setImageResource(iconRes)
+                    androidx.core.widget.ImageViewCompat.setImageTintList(this, android.content.res.ColorStateList.valueOf(color))
+                    layoutParams = LinearLayout.LayoutParams((22 * d).toInt(), (22 * d).toInt())
+                })
+                setOnClickListener { sheet.dismiss(); act() }
+            })
+        }
+        val g1 = v.findViewById<LinearLayout>(R.id.group1)
+        val g2 = v.findViewById<LinearLayout>(R.id.group2)
+        val g3 = v.findViewById<LinearLayout>(R.id.group3)
+        if (single != null && !single.isDir) {
+            when {
+                ApkInstaller.isApk(single.name) -> {
+                    addRow(g1, R.string.install, R.drawable.ic_android) { installApk(single) }
+                    if (main.rootActive) addRow(g1, R.string.install_root, R.drawable.ic_android) {
+                        runOp {
+                            val r = ApkInstaller.installSilently(single.path)
+                            if (!r.ok || r.out.contains("Failure")) throw java.io.IOException((r.err + r.out).trim())
+                        }
+                    }
+                }
+                MusicPlayer.isAudio(single.name) -> addRow(g1, R.string.play_music, R.drawable.ic_play) { playMusic(single) }
+                ZipUtil.isZip(single.name) -> addRow(g1, R.string.extract, R.drawable.ic_zip) { extract(single) }
+            }
+            addRow(g1, R.string.open_with, R.drawable.ic_open) { openFile(single, chooser = true) }
+            addRow(g1, R.string.open_text, R.drawable.ic_edit) { openText(single, edit = false) }
+        }
+        addRow(g2, R.string.copy, R.drawable.ic_copy) { setClip(items, false) }
+        addRow(g2, R.string.move, R.drawable.ic_move) { setClip(items, true) }
+        addRow(g2, R.string.compress, R.drawable.ic_zip) { zipItems(items) }
+        if (single != null) {
+            addRow(g2, R.string.rename, R.drawable.ic_edit) { promptName(R.string.rename, single.name) { n -> ops.rename(single.path, n) } }
+            addRow(g2, R.string.details, R.drawable.ic_info) { showDetails(single) }
+        }
+        if (!adapter.selectionMode) addRow(g3, R.string.select, R.drawable.ic_check_circle) { enterSelect(single) }
+        addRow(g3, R.string.delete, R.drawable.ic_delete, danger = true) { confirmDeleteMany(items) }
+        listOf(g1, g2, g3).forEach {
+            it.visibility = if (it.childCount == 0) View.GONE else View.VISIBLE
+            it.background?.mutate()?.alpha = (255 * (100 - prefs.transparency) / 100).coerceIn(110, 255)
+        }
+
+        // Android 12+: blur what's behind the panel
+        if (android.os.Build.VERSION.SDK_INT >= 31) sheet.window?.let {
+            it.addFlags(android.view.WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+            it.attributes = it.attributes.apply { blurBehindRadius = 40 }
+        }
+        sheet.show()
+    }
+
+    private fun confirmDeleteMany(items: List<FileItem>) {
+        if (items.isEmpty()) return
+        if (items.size == 1) { confirmDelete(items[0]); exitSelect(); return }
+        val ctx = requireContext().applicationContext
+        val canBin = items.all { Trash.canTrash(ctx, it.path) && File(it.path).canWrite() }
+        val b = MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.delete)
+            .setMessage(getString(R.string.n_items, items.size))
+        if (canBin) {
+            b.setPositiveButton(R.string.move_to_bin) { _, _ -> runOp { items.forEach { Trash.moveToTrash(ctx, it.path) } } }
+                .setNeutralButton(R.string.delete_forever) { _, _ -> runOp { items.forEach { ops.delete(it.path) } } }
+        } else b.setPositiveButton(R.string.delete_forever) { _, _ -> runOp { items.forEach { ops.delete(it.path) } } }
+        b.setNegativeButton(R.string.cancel, null).show()
+        exitSelect()
     }
 
     private fun paste() {
@@ -449,7 +663,12 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     override fun onCreateMenu(menu: Menu, inflater: MenuInflater) = inflater.inflate(R.menu.files_menu, menu)
 
     override fun onPrepareMenu(menu: Menu) {
-        menu.findItem(R.id.action_root).isVisible = RootShell.deviceRooted  // hidden on non-rooted devices
+        val sel = adapter.selectionMode
+        menu.findItem(R.id.action_select_all).isVisible = sel
+        menu.findItem(R.id.action_done).isVisible = sel
+        listOf(R.id.action_select, R.id.action_up, R.id.action_storage).forEach { menu.findItem(it).isVisible = !sel }
+        menu.findItem(R.id.action_view).setTitle(if (prefs.viewMode == 0) R.string.view_list else R.string.view_icons)
+        menu.findItem(R.id.action_root).isVisible = RootShell.deviceRooted && !sel  // hidden on non-rooted devices
         menu.findItem(R.id.action_root).isChecked = main.rootActive
         menu.findItem(R.id.action_hidden).isChecked = prefs.showHidden
     }
@@ -457,6 +676,10 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_up -> goUp()
+            R.id.action_select -> enterSelect()
+            R.id.action_select_all -> { adapter.selectAll(); updateSelectionUi() }
+            R.id.action_done -> exitSelect()
+            R.id.action_view -> { prefs.viewMode = if (prefs.viewMode == 0) 1 else 0; setupList(); requireActivity().invalidateOptionsMenu() }
             R.id.action_storage -> chooseStorage()
             R.id.action_root -> main.setRootMode(!main.rootActive) { ok ->
                 if (ok) { limitPath = "/" } else { limitPath = internalRoot; currentPath = internalRoot }

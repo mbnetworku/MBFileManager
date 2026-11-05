@@ -23,4 +23,9 @@
     <color name="file">#78909C</color>
     <color name="badge_system">#FFB300</color>
     <color name="badge_off">#9E9E9E</color>
+    <color name="window_top">#EEF3FB</color>
+    <color name="window_bottom">#D6E4F7</color>
+    <color name="sheet_bg">#F7F8FB</color>
+    <color name="row_divider">#1F000000</color>
+    <color name="icon_folder">#4FA3F7</color>
 </resources>

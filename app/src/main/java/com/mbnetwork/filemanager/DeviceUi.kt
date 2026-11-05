@@ -26,6 +26,9 @@ object DeviceUi {
 
     fun fileColumns(ctx: Context) = if (!isLarge(ctx)) 1 else maxOf(3, contentWidthDp(ctx) / 160)
 
+    /** Icon view (like a photo grid): about 115dp per column. */
+    fun iconColumns(ctx: Context) = maxOf(3, contentWidthDp(ctx) / 115)
+
     fun appColumns(ctx: Context) = when {
         isLarge(ctx) -> maxOf(2, contentWidthDp(ctx) / 340)
         ctx.resources.configuration.screenWidthDp >= 560 -> 2 // phone in landscape
@@ -52,7 +55,53 @@ object DeviceUi {
         if (AppCompatDelegate.getDefaultNightMode() != mode) AppCompatDelegate.setDefaultNightMode(mode)
     }
 
+    /** Applies the user's transparency to a color (glass effect). */
+    fun glass(ctx: Context, colorRes: Int): Int {
+        val c = androidx.core.content.ContextCompat.getColor(ctx, colorRes)
+        val alpha = (255 * (100 - Prefs(ctx).transparency) / 100).coerceIn(60, 255)
+        return (c and 0x00FFFFFF) or (alpha shl 24)
+    }
+
+    /** Appearance: theme (White / Black / System) + transparency slider. */
     fun chooseTheme(activity: Activity, prefs: Prefs) {
+        val d = activity.resources.displayMetrics.density
+        val box = android.widget.LinearLayout(activity).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding((24 * d).toInt(), (8 * d).toInt(), (24 * d).toInt(), 0)
+        }
+        val group = android.widget.RadioGroup(activity)
+        listOf(R.string.theme_system, R.string.theme_light, R.string.theme_dark).forEachIndexed { i, s ->
+            group.addView(com.google.android.material.radiobutton.MaterialRadioButton(activity).apply {
+                id = 100 + i; setText(s); isChecked = prefs.theme == i
+            })
+        }
+        box.addView(group)
+        box.addView(android.widget.TextView(activity).apply {
+            setText(R.string.transparency); textSize = 16f
+            setPadding(0, (16 * d).toInt(), 0, 0)
+        })
+        val slider = com.google.android.material.slider.Slider(activity).apply {
+            valueFrom = 0f; valueTo = 70f; stepSize = 5f; value = prefs.transparency.toFloat()
+        }
+        box.addView(slider)
+        box.addView(android.widget.TextView(activity).apply { setText(R.string.transparency_hint); alpha = 0.7f })
+        MaterialAlertDialogBuilder(activity)
+            .setTitle(R.string.appearance)
+            .setView(box)
+            .setPositiveButton(R.string.ok) { _, _ ->
+                val newTheme = group.checkedRadioButtonId - 100
+                val newT = slider.value.toInt()
+                val changed = newTheme != prefs.theme || newT != prefs.transparency
+                prefs.theme = newTheme; prefs.transparency = newT
+                applyTheme(activity, prefs)
+                if (changed) activity.recreate()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    @Suppress("unused")
+    fun chooseThemeOld(activity: Activity, prefs: Prefs) {
         val names = arrayOf(
             activity.getString(R.string.theme_system),
             activity.getString(R.string.theme_light),

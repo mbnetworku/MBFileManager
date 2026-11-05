@@ -7,5 +7,5 @@
     <item android:id="@+id/action_system" android:checkable="true" android:title="@string/show_system_apps" app:showAsAction="never" />
     <item android:id="@+id/action_root" android:checkable="true" android:title="@string/root_mode" app:showAsAction="never" />
     <item android:id="@+id/action_refresh" android:title="@string/refresh" app:showAsAction="never" />
-    <item android:id="@+id/action_theme" android:title="@string/theme" app:showAsAction="never" />
+    <item android:id="@+id/action_theme" android:title="@string/appearance" app:showAsAction="never" />
 </menu>

@@ -33,10 +33,11 @@ class TrashFragment : Fragment(R.layout.fragment_trash), Refreshable, MenuProvid
         swipe = view.findViewById(R.id.swipe)
         empty = view.findViewById(R.id.emptyText)
         val cols = DeviceUi.fileColumns(requireContext())
-        adapter = FileAdapter(cols > 1, { onEntry(it) }, { f, _ -> onEntry(f) })
+        adapter = FileAdapter(if (cols > 1) FileAdapter.GRID else FileAdapter.LIST, { onEntry(it) }, { f, _ -> onEntry(f) })
         view.findViewById<RecyclerView>(R.id.list).apply {
             layoutManager = if (cols > 1) GridLayoutManager(requireContext(), cols) else LinearLayoutManager(requireContext())
             adapter = this@TrashFragment.adapter
+            this@TrashFragment.adapter.glassColor = DeviceUi.glass(requireContext(), R.color.card_bg)
         }
         swipe.setOnRefreshListener { refresh() }
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)

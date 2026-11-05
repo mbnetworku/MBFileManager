@@ -35,6 +35,10 @@
 ## ✨ Features
 
 ### 📁 File Explorer
+- **Icons view** with real photo/video thumbnails and APK icons, or **List view** (⋮ → View)
+- **Select mode**: tick many files → glass action bar: **Share · Copy · Move · Zip · Delete · More**
+- **Action sheet**: long-press any file → share straight to an app, copy, move, zip, rename, details, delete
+- 🗜️ **Zip & Unzip**: compress files/folders to `.zip`; tap a `.zip` to extract it
 - Browse **internal storage**, **SD card** and **USB drives**
 - Open, share, rename, copy, move, paste, delete, details
 - Create folders and files · show hidden files · sort by name / size / date
@@ -77,7 +81,7 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 | **Tablet** | Grid view with side navigation rail |
 | **Android TV** | Grid view, remote/D-pad friendly with a glowing focus outline, listed on the TV home screen |
 
-**Theme:** choose **White**, **Black** or **System default** from the menu (⋮ → Theme).
+**Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
 
 ## 🔐 Permissions: asked only when needed
 

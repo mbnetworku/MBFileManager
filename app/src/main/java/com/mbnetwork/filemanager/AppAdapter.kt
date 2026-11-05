@@ -39,6 +39,8 @@ class AppAdapter(private val onClick: (AppItem) -> Unit) : RecyclerView.Adapter<
     override fun onBindViewHolder(h: VH, position: Int) {
         val a = items[position]
         val ctx = h.itemView.context
+        (h.itemView as? com.google.android.material.card.MaterialCardView)
+            ?.setCardBackgroundColor(DeviceUi.glass(ctx, R.color.card_bg))
         h.icon.setImageDrawable(a.icon)
         h.label.text = a.label
         h.pkg.text = "${a.pkg}  •  ${a.version}"

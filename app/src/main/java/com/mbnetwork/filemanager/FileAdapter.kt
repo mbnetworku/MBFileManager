@@ -1,38 +1,59 @@
 package com.mbnetwork.filemanager
 
 import android.content.res.ColorStateList
+import android.graphics.Outline
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewOutlineProvider
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.card.MaterialCardView
 import java.util.Date
 
+/**
+ * Three looks: ICONS (big icons + photo thumbnails), LIST (cards), GRID (cards for tablet/TV).
+ * Supports multi-select with check marks.
+ */
 class FileAdapter(
-    private val grid: Boolean,
+    private val mode: Int,
     private val onClick: (FileItem) -> Unit,
     private val onLongClick: (FileItem, View) -> Unit
 ) : RecyclerView.Adapter<FileAdapter.VH>() {
 
     var items: List<FileItem> = emptyList()
-        set(v) { field = v; notifyDataSetChanged() }
+        set(v) { field = v; selected.retainAll(v.map { it.path }.toSet()); notifyDataSetChanged() }
+
+    var selectionMode = false
+        set(v) { field = v; if (!v) selected.clear(); notifyDataSetChanged() }
+    val selected = LinkedHashSet<String>()
+    var glassColor: Int? = null
+
+    fun toggle(f: FileItem) {
+        if (!selected.remove(f.path)) selected += f.path
+        notifyItemChanged(items.indexOf(f))
+    }
+
+    fun selectAll() { selected.clear(); items.forEach { selected += it.path }; notifyDataSetChanged() }
+    fun selectedItems() = items.filter { it.path in selected }
 
     class VH(v: View) : RecyclerView.ViewHolder(v) {
         val icon: ImageView = v.findViewById(R.id.icon)
         val name: TextView = v.findViewById(R.id.name)
         val info: TextView = v.findViewById(R.id.info)
+        val check: ImageView? = v.findViewById(R.id.check)
         val chevron: View? = v.findViewById(R.id.chevron)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context)
-            .inflate(if (grid) R.layout.item_file_grid else R.layout.item_file, parent, false)
+        val layout = when (mode) { ICONS -> R.layout.item_file_icon; GRID -> R.layout.item_file_grid; else -> R.layout.item_file }
+        val v = LayoutInflater.from(parent.context).inflate(layout, parent, false)
         DeviceUi.applyFocusEffect(v)
         return VH(v)
     }
@@ -44,20 +65,69 @@ class FileAdapter(
         val ctx = h.itemView.context
         h.name.text = f.name
         h.itemView.alpha = if (f.isHidden) 0.6f else 1f
+        glassColor?.let { (h.itemView as? MaterialCardView)?.setCardBackgroundColor(it) }
+
         val (icon, color) = typeOf(f)
         h.icon.setImageResource(icon)
-        ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
-        ViewCompat.setBackgroundTintList(h.icon, ColorStateList.valueOf(ContextCompat.getColor(ctx, color)))
-        h.chevron?.visibility = if (f.isDir) View.VISIBLE else View.INVISIBLE
+        h.icon.tag = null
+        if (mode == ICONS) bindIconMode(h, f, icon, color) else {
+            ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
+            ViewCompat.setBackgroundTintList(h.icon, ColorStateList.valueOf(ContextCompat.getColor(ctx, color)))
+        }
+
+        h.chevron?.visibility = if (f.isDir && !selectionMode) View.VISIBLE else View.GONE
+        val isSel = f.path in selected
+        h.check?.visibility = if (selectionMode) View.VISIBLE else View.GONE
+        h.check?.setImageResource(if (isSel) R.drawable.ic_check_circle else R.drawable.ic_circle)
+        h.check?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(
+            if (isSel) ContextCompat.getColor(ctx, R.color.icon_folder) else 0xFFB0B0B0.toInt())) }
+        h.itemView.isActivated = isSel
+
         val date = if (f.lastModified > 0) DateFormat.getDateFormat(ctx).format(Date(f.lastModified)) +
-            (if (grid) "" else " " + DateFormat.getTimeFormat(ctx).format(Date(f.lastModified))) else ""
-        h.info.text = if (f.isDir) date else listOf(Formatter.formatShortFileSize(ctx, f.size), date)
-            .filter { it.isNotEmpty() }.joinToString("  •  ")
+            (if (mode == LIST) " " + DateFormat.getTimeFormat(ctx).format(Date(f.lastModified)) else "") else ""
+        val size = if (f.isDir) "" else Formatter.formatShortFileSize(ctx, f.size)
+        h.info.text = if (mode == ICONS) listOf(date, size).filter { it.isNotEmpty() }.joinToString("\n")
+            else listOf(size, date).filter { it.isNotEmpty() }.joinToString("  •  ")
         h.itemView.setOnClickListener { onClick(f) }
         h.itemView.setOnLongClickListener { onLongClick(f, it); true }
     }
 
+    /** Big icons: folders without background, photos/videos/APKs show a real preview. */
+    private fun bindIconMode(h: VH, f: FileItem, icon: Int, color: Int) {
+        val ctx = h.itemView.context
+        val d = ctx.resources.displayMetrics.density
+        h.icon.clipToOutline = true
+        h.icon.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, 14 * d)
+        }
+        if (f.isDir) {
+            h.icon.background = null
+            h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
+            h.icon.setPadding(0, 0, 0, 0)
+            ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.icon_folder)))
+            return
+        }
+        h.icon.setBackgroundResource(R.drawable.bg_thumb)
+        ViewCompat.setBackgroundTintList(h.icon, ColorStateList.valueOf(ContextCompat.getColor(ctx, color)))
+        ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
+        h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
+        val p = (22 * d).toInt(); h.icon.setPadding(p, p, p, p)
+        if (ThumbLoader.canThumb(f.name)) {
+            ThumbLoader.load(ctx, f.path, h.icon) {
+                ImageViewCompat.setImageTintList(h.icon, null)
+                h.icon.setPadding(0, 0, 0, 0)
+                val apk = f.name.lowercase().endsWith(".apk")
+                h.icon.scaleType = if (apk) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
+                if (apk) { val q = (10 * d).toInt(); h.icon.setPadding(q, q, q, q); ViewCompat.setBackgroundTintList(h.icon, ColorStateList.valueOf(0x22808080)) }
+            }
+        }
+    }
+
     companion object {
+        const val ICONS = 0
+        const val LIST = 1
+        const val GRID = 2
+
         private val IMAGE = setOf("jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "svg")
         private val VIDEO = setOf("mp4", "mkv", "avi", "mov", "webm", "3gp", "flv", "ts", "m4v")
         private val AUDIO = setOf("mp3", "wav", "ogg", "flac", "aac", "m4a", "opus", "amr")

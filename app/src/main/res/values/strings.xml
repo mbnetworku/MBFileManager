@@ -103,4 +103,23 @@
     <string name="data_folder">Android/data folder</string>
     <string name="obb_hint">Android blocks this folder.\n\nFor the OBB folder, allow \"Install unknown apps\" for MB File Manager, then come back.\nOn rooted devices, turn on Root mode to open OBB and Android/data.</string>
     <string name="allow_access">Allow access</string>
+    <string name="select">Select</string>
+    <string name="select_all">Select All</string>
+    <string name="done_select">Done</string>
+    <string name="n_selected">%1$d selected</string>
+    <string name="view_icons">Icons</string>
+    <string name="view_list">List</string>
+    <string name="move">Move</string>
+    <string name="more">More</string>
+    <string name="compress">Compress (Zip)</string>
+    <string name="extract">Extract here</string>
+    <string name="extract_confirm">Extract \"%1$s\" into a new folder here?</string>
+    <string name="zip_name">Zip file name</string>
+    <string name="n_items">%1$d items</string>
+    <string name="appearance">Appearance</string>
+    <string name="transparency">Transparency</string>
+    <string name="transparency_hint">Makes cards, bars and panels see-through.</string>
+    <string name="calculating">Calculating size…</string>
+    <string name="share_with">Share with</string>
+    <string name="zip_short">Zip</string>
 </resources>
