@@ -7,4 +7,5 @@
     <dimen name="nav_indicator_h">28dp</dimen>
     <dimen name="nav_indicator_w">56dp</dimen>
     <dimen name="nav_bottom_inset">86dp</dimen>
+    <dimen name="mini_bottom_margin">84dp</dimen>
 </resources>

@@ -2,4 +2,5 @@
 <resources>
     <!-- Recently Deleted is opened from Browse / the sidebar (not a tab any more) -->
     <item name="nav_trash" type="id" />
+    <item name="tag_base_pad" type="id" />
 </resources>

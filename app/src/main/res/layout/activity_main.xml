@@ -50,6 +50,83 @@
                 app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
         </com.mbnetwork.filemanager.GlassView>
 
+        <!-- Mini player: shown while music plays. Tap = open player, swipe down = hide -->
+        <com.mbnetwork.filemanager.GlassView
+            android:id="@+id/miniGlass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp"
+            android:layout_marginBottom="@dimen/mini_bottom_margin"
+            android:elevation="10dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <ImageView
+                    android:id="@+id/miniCover"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:importantForAccessibility="no" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="6dp">
+
+                    <TextView
+                        android:id="@+id/miniTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        android:textColor="@color/label"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/miniSub"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/miniPlay"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/play"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_pause"
+                    android:tint="@color/label" />
+
+                <ImageButton
+                    android:id="@+id/miniNext"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/next"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_next"
+                    android:tint="@color/label" />
+            </LinearLayout>
+        </com.mbnetwork.filemanager.GlassView>
+
         <!-- Liquid Glass floating tab bar (capsule) -->
         <com.mbnetwork.filemanager.GlassView
             android:id="@+id/bottomGlass"

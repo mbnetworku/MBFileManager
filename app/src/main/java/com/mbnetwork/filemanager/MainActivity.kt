@@ -6,6 +6,9 @@ import androidx.drawerlayout.widget.DrawerLayout
 import android.view.View
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.navigationrail.NavigationRailView
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -38,6 +41,13 @@ class MainActivity : AppCompatActivity() {
     var bottomInset = 0
         private set
 
+    // ---- mini player (shown above the tab bar while music plays)
+    private var miniDismissedFor: String? = null      // song whose mini bar was swiped away
+    private var miniSuppressed = false                // hidden during Select mode
+    private var miniShownPath: String? = null
+    private var miniExtra = 0
+    private val miniObserver: () -> Unit = { runOnUiThread { updateMini() } }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         prefs = Prefs(this)
         MusicPlayer.appContext = applicationContext
@@ -64,6 +74,7 @@ class MainActivity : AppCompatActivity() {
         if (bigScreen) findViewById<View>(R.id.row).setPadding(0, barPx, 0, 0)  // tablet / TV: content starts below it
         findViewById<GlassView>(R.id.topGlass).setup(container, shape = GlassView.SHAPE_NONE, rim = GlassView.RIM_BOTTOM, tintAlpha = 0.62f)
         findViewById<GlassView>(R.id.bottomGlass).setup(container, capsule = true, tintAlpha = 0.58f)
+        setupMini(container, bigScreen)
         findViewById<GlassView>(R.id.drawerPanel).setup(findViewById(R.id.root), radiusDp = 28f, tintAlpha = 0.80f)
 
         // Sidebar (hidden until opened with the ☰ button or a swipe from the left edge)
@@ -188,6 +199,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        MusicPlayer.addObserver(miniObserver)
+        updateMini()
         knownVolumes = StorageVolumes.list(this).map { it.path }.toSet()
         val media = android.content.IntentFilter().apply {
             addAction(android.content.Intent.ACTION_MEDIA_MOUNTED)
@@ -214,6 +227,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        MusicPlayer.removeObserver(miniObserver)
         try { unregisterReceiver(mediaReceiver); unregisterReceiver(usbReceiver) } catch (e: Exception) { }
     }
 
@@ -243,8 +257,119 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ------------------------------------------------------------------ mini player
+
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun setupMini(container: View, bigScreen: Boolean) {
+        val mini = findViewById<GlassView>(R.id.miniGlass)
+        val d = resources.displayMetrics.density
+        mini.setup(container, radiusDp = 22f, tintAlpha = 0.66f)
+        if (bigScreen) (mini.layoutParams as android.widget.FrameLayout.LayoutParams).bottomMargin = (12 * d).toInt()
+        findViewById<View>(R.id.miniPlay).setOnClickListener { MusicPlayer.toggle() }
+        findViewById<View>(R.id.miniNext).setOnClickListener { MusicPlayer.next() }
+
+        // tap = open the player, swipe down = hide the bar (the music keeps playing)
+        mini.setOnTouchListener(object : View.OnTouchListener {
+            var downY = 0f
+            var dragged = false
+            override fun onTouch(v: View, e: android.view.MotionEvent): Boolean {
+                when (e.actionMasked) {
+                    android.view.MotionEvent.ACTION_DOWN -> { downY = e.rawY; dragged = false; return true }
+                    android.view.MotionEvent.ACTION_MOVE -> {
+                        val dy = e.rawY - downY
+                        if (dy > 8 * d) dragged = true
+                        if (dragged) v.translationY = dy.coerceAtLeast(0f)
+                        return true
+                    }
+                    android.view.MotionEvent.ACTION_UP -> {
+                        val dy = e.rawY - downY
+                        when {
+                            !dragged && kotlin.math.abs(dy) < 8 * d ->
+                                startActivity(android.content.Intent(this@MainActivity, PlayerActivity::class.java))
+                            dy > 40 * d -> dismissMini(v)
+                            else -> v.animate().translationY(0f).setDuration(160).start()
+                        }
+                        return true
+                    }
+                    android.view.MotionEvent.ACTION_CANCEL -> { v.animate().translationY(0f).setDuration(160).start(); return true }
+                }
+                return false
+            }
+        })
+
+        // lists get extra room at the bottom while the bar is visible
+        supportFragmentManager.registerFragmentLifecycleCallbacks(object : androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks() {
+            override fun onFragmentViewCreated(fm: androidx.fragment.app.FragmentManager, f: Fragment, v: View, savedInstanceState: Bundle?) {
+                v.post { applyMiniInset(miniExtra) }
+            }
+        }, false)
+    }
+
+    private fun dismissMini(v: View) {
+        miniDismissedFor = MusicPlayer.current?.absolutePath
+        v.animate().translationY(v.height + 80 * resources.displayMetrics.density).alpha(0f).setDuration(180).withEndAction {
+            v.visibility = View.GONE; v.translationY = 0f; v.alpha = 1f
+            miniShownPath = null
+            applyMiniInset(0)
+        }.start()
+    }
+
+    private fun updateMini() {
+        val mini = findViewById<GlassView>(R.id.miniGlass) ?: return
+        val song = MusicPlayer.current
+        val show = MusicPlayer.active && song != null && !miniSuppressed && song.absolutePath != miniDismissedFor
+        if (!show) {
+            if (mini.visibility == View.VISIBLE) { mini.visibility = View.GONE; miniShownPath = null }
+            applyMiniInset(0)
+            return
+        }
+        song!!
+        findViewById<TextView>(R.id.miniTitle).text = song.nameWithoutExtension
+        findViewById<TextView>(R.id.miniSub).text = song.parentFile?.name ?: ""
+        findViewById<ImageButton>(R.id.miniPlay).setImageResource(if (MusicPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+        if (miniShownPath != song.absolutePath) {
+            miniShownPath = song.absolutePath
+            val cover = findViewById<ImageView>(R.id.miniCover)
+            cover.setImageDrawable(FileIcons.drawable(FileItem(song.name, song.absolutePath, false, 0, 0)))
+            cover.background = null
+            cover.scaleType = ImageView.ScaleType.FIT_CENTER
+            cover.clipToOutline = false
+            ThumbLoader.load(this, song.absolutePath, cover) {
+                cover.scaleType = ImageView.ScaleType.CENTER_CROP
+                cover.setBackgroundResource(R.drawable.bg_thumb_win)
+                cover.clipToOutline = true
+            }
+        }
+        if (mini.visibility != View.VISIBLE) {
+            mini.alpha = 0f
+            mini.translationY = 40 * resources.displayMetrics.density
+            mini.visibility = View.VISIBLE
+            mini.animate().alpha(1f).translationY(0f).setDuration(220).start()
+        }
+        applyMiniInset((68 * resources.displayMetrics.density).toInt())
+    }
+
+    /** Gives the current screen's list extra bottom room (and lifts the FAB) while the mini bar is visible. */
+    private fun applyMiniInset(extra: Int) {
+        miniExtra = extra
+        val root = findViewById<android.view.ViewGroup>(R.id.container)?.getChildAt(0) ?: return
+        findScroller(root)?.let { s ->
+            val base = (s.getTag(R.id.tag_base_pad) as? Int) ?: s.paddingBottom.also { s.setTag(R.id.tag_base_pad, it) }
+            s.setPadding(s.paddingLeft, s.paddingTop, s.paddingRight, base + extra)
+        }
+        root.findViewById<View>(R.id.fab)?.translationY = -extra.toFloat()
+    }
+
+    private fun findScroller(v: View): android.view.ViewGroup? {
+        if (v is androidx.recyclerview.widget.RecyclerView || v is android.widget.ScrollView) return v as android.view.ViewGroup
+        if (v is android.view.ViewGroup) for (i in 0 until v.childCount) findScroller(v.getChildAt(i))?.let { return it }
+        return null
+    }
+
     /** During Select mode the tab bar makes room for the batch toolbar (iOS behaviour). */
     fun setTabBarVisible(visible: Boolean) {
+        miniSuppressed = !visible
+        updateMini()
         if (DeviceUi.isLarge(this)) return
         val g = findViewById<View>(R.id.bottomGlass)
         g.animate().cancel()
