@@ -142,8 +142,6 @@ class HomeFragment : Fragment(), Refreshable {
     private fun section(key: String, title: Int, build: (LinearLayout) -> Unit) {
         val group = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.bg_group)
-            clipToOutline = true
             visibility = if (open[key] == true) View.VISIBLE else View.GONE
         }
         build(group)
@@ -173,12 +171,10 @@ class HomeFragment : Fragment(), Refreshable {
         box.addView(group, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
     }
 
+    /** Every row is a separate rounded card with a small gap (no flat divider lines). */
     private fun addRow(group: LinearLayout, row: View) {
-        if (group.childCount > 0) group.addView(View(requireContext()).apply {
-            setBackgroundColor(color(R.color.row_divider))
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { marginStart = px(60) }
-        })
-        group.addView(row)
+        group.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            .apply { topMargin = px(4); bottomMargin = px(4) })
     }
 
     private fun iconView(res: Int, tint: Int) = ImageView(requireContext()).apply {
@@ -209,8 +205,7 @@ class HomeFragment : Fragment(), Refreshable {
             minimumHeight = px(54)
             setPadding(px(14), px(6), px(12), px(6))
             isClickable = true; isFocusable = true
-            val tv = TypedValue(); ctx.theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
-            setBackgroundResource(tv.resourceId)
+            setBackgroundResource(R.drawable.bg_row_round)
             addView(lead)
             addView(LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL

@@ -22,6 +22,8 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var play: ImageButton
     private lateinit var shuffle: ImageButton
     private lateinit var repeat: ImageButton
+    private lateinit var cover: android.widget.ImageView
+    private var shownCover: String? = null
     private var dragging = false
 
     private val ticker = object : Runnable {
@@ -39,6 +41,7 @@ class PlayerActivity : AppCompatActivity() {
         DeviceUi.applyTheme(this, Prefs(this))
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
+        cover = findViewById(R.id.cover)
         title = findViewById(R.id.songTitle)
         folder = findViewById(R.id.songFolder)
         count = findViewById(R.id.songCount)
@@ -88,6 +91,22 @@ class PlayerActivity : AppCompatActivity() {
         play.setImageResource(if (MusicPlayer.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
         shuffle.alpha = if (MusicPlayer.shuffle) 1f else 0.4f
         repeat.alpha = if (MusicPlayer.repeatOne) 1f else 0.4f
+        showCover(f)
+    }
+
+    /** Album art of the playing song (embedded picture). Songs without a cover show a music note. */
+    private fun showCover(f: File?) {
+        val path = f?.absolutePath
+        if (path == shownCover) return
+        shownCover = path
+        val pad = (84 * resources.displayMetrics.density).toInt()
+        cover.setImageResource(R.drawable.ic_music_big)
+        cover.scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        cover.setPadding(pad, pad, pad, pad)
+        if (path != null) ThumbLoader.load(this, path, cover) {
+            cover.scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            cover.setPadding(0, 0, 0, 0)
+        }
     }
 
     private fun fmt(ms: Int): String { val s = ms / 1000; return "%d:%02d".format(s / 60, s % 60) }
