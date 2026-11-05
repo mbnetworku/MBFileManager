@@ -314,8 +314,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         adapter.glassColor = DeviceUi.glass(ctx, R.color.card_bg)
         old?.let { adapter.items = it.items }
         val cols = when (mode) {
-            FileAdapter.ICONS -> (if (prefs.iconColumns > 0) prefs.iconColumns else DeviceUi.iconColumns(ctx))
-                .coerceIn(2, DeviceUi.maxIconColumns(ctx))
+            FileAdapter.ICONS -> (if (prefs.iconColumns > 0) DeviceUi.scaledColumns(ctx, prefs.iconColumns) else DeviceUi.iconColumns(ctx))
+                .coerceIn(3, DeviceUi.maxIconColumns(ctx))
             FileAdapter.GRID -> DeviceUi.fileColumns(ctx)
             else -> 1
         }
@@ -336,8 +336,13 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 val lm = recycler.layoutManager as? GridLayoutManager ?: return true
                 val now = lm.spanCount
                 val next = when { acc > 1.25f -> now - 1; acc < 0.8f -> now + 1; else -> now }
-                    .coerceIn(2, DeviceUi.maxIconColumns(requireContext()))
-                if (next != now) { lm.spanCount = next; prefs.iconColumns = next; adapter.columns = next; adapter.notifyDataSetChanged(); acc = 1f }
+                    .coerceIn(3, DeviceUi.maxIconColumns(requireContext()))
+                if (next != now) {
+                    lm.spanCount = next; adapter.columns = next; adapter.notifyDataSetChanged(); acc = 1f
+                    val c = resources.configuration
+                    val ratio = minOf(c.screenWidthDp, c.screenHeightDp).toFloat() / c.screenWidthDp.coerceAtLeast(1)
+                    prefs.iconColumns = Math.round(next * ratio).coerceAtLeast(2)
+                }
                 return true
             }
         })
@@ -345,7 +350,9 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     private fun chooseColumns() {
-        val opts = listOf(0) + (2..DeviceUi.maxIconColumns(requireContext()).coerceAtMost(8)).toList()
+        val c = resources.configuration
+        val portraitMax = maxOf(3, minOf(c.screenWidthDp, c.screenHeightDp) / 64)
+        val opts = listOf(0) + (3..portraitMax.coerceAtMost(8)).toList()
         val names = opts.map { if (it == 0) getString(R.string.columns_auto) else "$it" }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.columns)

@@ -27,10 +27,17 @@ object DeviceUi {
     fun fileColumns(ctx: Context) = if (!isLarge(ctx)) 1 else maxOf(3, contentWidthDp(ctx) / 160)
 
     /** Icon view (like a photo grid): about 115dp per column. */
-    fun iconColumns(ctx: Context) = maxOf(3, contentWidthDp(ctx) / 115)
+    fun iconColumns(ctx: Context) = maxOf(4, contentWidthDp(ctx) / 76)
 
-    /** Most columns that still look good: each column at least ~88dp wide. */
-    fun maxIconColumns(ctx: Context) = maxOf(2, contentWidthDp(ctx) / 88)
+    /** Most columns that still look good: each column at least ~64dp wide. */
+    fun maxIconColumns(ctx: Context) = maxOf(3, contentWidthDp(ctx) / 64)
+
+    /** A column count chosen in portrait, scaled to the current width (landscape shows more). */
+    fun scaledColumns(ctx: Context, portraitCols: Int): Int {
+        val c = ctx.resources.configuration
+        val portraitW = minOf(c.screenWidthDp, c.screenHeightDp).coerceAtLeast(1)
+        return Math.round(portraitCols * contentWidthDp(ctx).toFloat() / portraitW)
+    }
 
     fun appColumns(ctx: Context) = when {
         isLarge(ctx) -> maxOf(2, contentWidthDp(ctx) / 340)

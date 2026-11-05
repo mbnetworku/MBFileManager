@@ -116,11 +116,12 @@ class FileAdapter(
         val d = ctx.resources.displayMetrics.density
         // square thumbnail that fits the column (never squeezed)
         val parentW = (h.itemView.parent as? View)?.width?.takeIf { it > 0 } ?: ctx.resources.displayMetrics.widthPixels
-        val size = ((parentW / columns) - (24 * d)).toInt().coerceIn((48 * d).toInt(), (120 * d).toInt())
+        val size = ((parentW / columns) - (18 * d)).toInt().coerceIn((40 * d).toInt(), (64 * d).toInt())
         (h.icon.parent as View).layoutParams = (h.icon.parent as View).layoutParams.apply { width = size; height = size }
         h.name.maxLines = 2
         h.name.ellipsize = android.text.TextUtils.TruncateAt.END
-        h.name.textSize = if (columns >= 5) 12f else 14f
+        h.name.textSize = if (columns >= 6) 11f else 12.5f
+        h.info.textSize = 10f
         val radiusDp = size / d * 0.26f // soft "squircle" corners
         h.icon.clipToOutline = true
         h.icon.outlineProvider = object : ViewOutlineProvider() {
