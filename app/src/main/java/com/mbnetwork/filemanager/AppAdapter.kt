@@ -32,7 +32,7 @@ class AppAdapter(private val onClick: (AppItem) -> Unit) : RecyclerView.Adapter<
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false).also { DeviceUi.applyFocusEffect(it) })
+        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false).also { DeviceUi.applyFocusEffect(it); DeviceUi.liquidTouch(it) })
 
     override fun getItemCount() = items.size
 

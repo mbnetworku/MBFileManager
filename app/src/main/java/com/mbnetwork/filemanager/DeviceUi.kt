@@ -115,12 +115,54 @@ object DeviceUi {
         }
     }
 
+    /**
+     * Interactive Liquid Glass: on touch the card presses in, a soft light follows the finger,
+     * and it springs back when released.
+     */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    fun liquidTouch(v: View) {
+        if (!liquid(v.context)) { v.setOnTouchListener(null); return }
+        val light = android.graphics.drawable.GradientDrawable().apply {
+            gradientType = android.graphics.drawable.GradientDrawable.RADIAL_GRADIENT
+            colors = intArrayOf(0x55FFFFFF, 0x00FFFFFF)
+        }
+        v.setOnTouchListener { view, e ->
+            val w = view.width.coerceAtLeast(1); val h = view.height.coerceAtLeast(1)
+            when (e.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    light.gradientRadius = maxOf(w, h) * 0.6f
+                    light.setGradientCenter(e.x / w, e.y / h)
+                    if (android.os.Build.VERSION.SDK_INT >= 23) view.foreground = light
+                    view.animate().scaleX(0.97f).scaleY(0.97f).setDuration(120).start()
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    light.setGradientCenter((e.x / w).coerceIn(0f, 1f), (e.y / h).coerceIn(0f, 1f))
+                    light.invalidateSelf()
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    view.animate().scaleX(1f).scaleY(1f).setDuration(260)
+                        .setInterpolator(android.view.animation.OvershootInterpolator(3f)).start()
+                    view.postDelayed({ if (android.os.Build.VERSION.SDK_INT >= 23) view.foreground = null }, 220)
+                }
+            }
+            false // let normal click / long-click still work
+        }
+    }
+
+    /** Android 12+: real blur of a view (used behind the sidebar and sheets). */
+    fun blur(v: View, radius: Float) {
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            v.setRenderEffect(if (radius < 0.5f) null else
+                android.graphics.RenderEffect.createBlurEffect(radius, radius, android.graphics.Shader.TileMode.CLAMP))
+        }
+    }
+
     /** Applies the user's transparency to a color (glass effect). */
     fun glass(ctx: Context, colorRes: Int): Int {
         val c = androidx.core.content.ContextCompat.getColor(ctx, colorRes)
         val p = Prefs(ctx)
-        val t = if (p.liquidGlass) maxOf(p.transparency, 45) else p.transparency
-        val alpha = (255 * (100 - t) / 100).coerceIn(60, 255)
+        val t = if (p.liquidGlass) p.transparency.coerceIn(15, 28) else p.transparency
+        val alpha = (255 * (100 - t) / 100).coerceIn(150, 255) // always readable
         return (c and 0x00FFFFFF) or (alpha shl 24)
     }
 

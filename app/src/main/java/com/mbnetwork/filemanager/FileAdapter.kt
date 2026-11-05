@@ -55,6 +55,7 @@ class FileAdapter(
         val layout = when (mode) { ICONS -> R.layout.item_file_icon; GRID -> R.layout.item_file_grid; else -> R.layout.item_file }
         val v = LayoutInflater.from(parent.context).inflate(layout, parent, false)
         DeviceUi.applyFocusEffect(v)
+        DeviceUi.liquidTouch(v)
         return VH(v)
     }
 

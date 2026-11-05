@@ -96,6 +96,7 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             .apply { setMargins(px(8), px(1), px(8), px(1)) }
         setOnClickListener { click() }
+        DeviceUi.liquidTouch(this)
     }
 
     private fun row(title: String, ic: Int, color: Int, click: () -> Unit) {

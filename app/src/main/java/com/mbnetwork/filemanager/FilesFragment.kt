@@ -355,7 +355,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         val ctx = requireContext()
         val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx, R.style.ThemeOverlay_MBFileManager_Sheet)
         val v = layoutInflater.inflate(R.layout.sheet_actions, null)
-        v.background?.mutate()?.alpha = (255 * (100 - prefs.transparency) / 100).coerceIn(110, 255)
+        v.background?.mutate()?.alpha = (255 * (100 - prefs.transparency) / 100).coerceIn(215, 255)
         sheet.setContentView(v)
         val single = items.singleOrNull()
         val d = resources.displayMetrics.density
@@ -468,7 +468,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         addRow(g3, R.string.delete, R.drawable.ic_delete, danger = true) { confirmDeleteMany(items) }
         listOf(g1, g2, g3).forEach {
             it.visibility = if (it.childCount == 0) View.GONE else View.VISIBLE
-            it.background?.mutate()?.alpha = (255 * (100 - prefs.transparency) / 100).coerceIn(110, 255)
+            it.background?.mutate()?.alpha = (255 * (100 - prefs.transparency) / 100).coerceIn(215, 255)
         }
 
         // Android 12+: blur what's behind the panel

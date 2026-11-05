@@ -48,11 +48,19 @@ class MainActivity : AppCompatActivity() {
         // Sidebar (hidden until opened with the ☰ button or a swipe from the left edge)
         drawer = findViewById(R.id.drawer)
         sidebar = Sidebar(this, findViewById(R.id.drawerContent))
-        findViewById<View>(R.id.drawerPanel).setBackgroundColor(DeviceUi.glass(this, R.color.sheet_bg))
+        // Sidebar must always be readable: (almost) solid panel; content behind gets dimmed / blurred.
+        val panelColor = androidx.core.content.ContextCompat.getColor(this, R.color.sheet_bg)
+        findViewById<View>(R.id.drawerPanel).setBackgroundColor(
+            if (DeviceUi.liquid(this) && android.os.Build.VERSION.SDK_INT >= 31) (panelColor and 0x00FFFFFF) or (0xE6 shl 24) else panelColor)
+        drawer.setScrimColor(0x99000000.toInt())
+        val mainContent = drawer.getChildAt(0)
         val toggle = androidx.appcompat.app.ActionBarDrawerToggle(this, drawer, toolbar, R.string.drawer_open, R.string.drawer_close)
         drawer.addDrawerListener(toggle)
         toggle.syncState()
         drawer.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerSlide(v: View, offset: Float) {
+                if (DeviceUi.liquid(this@MainActivity)) DeviceUi.blur(mainContent, 24f * offset)
+            }
             override fun onDrawerStateChanged(state: Int) {
                 if (state == DrawerLayout.STATE_SETTLING && !drawer.isDrawerOpen(GravityCompat.START)) sidebar.build()
             }
