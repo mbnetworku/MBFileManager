@@ -45,6 +45,9 @@ class PhotoEditorActivity : AppCompatActivity() {
     private var tool = 0             // 0 crop, 1 rotate, 2 filters, 3 adjust
     private var changed = false
     private var enhance: ColorMatrix? = null     // "Auto enhance" result
+    private var transparent = false              // background removed: save as PNG
+    private var wandOn = false
+    private var wandTol = 35
 
     private val presets = listOf(
         Preset(R.string.f_original, null),
@@ -69,6 +72,7 @@ class PhotoEditorActivity : AppCompatActivity() {
 
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(Color.BLACK) }
         canvas = EditorCanvas(this)
+        canvas.onWandTap = { x, y -> wandCut(x, y) }
         root.addView(topBar())
         root.addView(canvas, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         panel = FrameLayout(this).apply { setPadding(UiKit.dp(context, 12), UiKit.dp(context, 8), UiKit.dp(context, 12), UiKit.dp(context, 4)) }
@@ -101,6 +105,8 @@ class PhotoEditorActivity : AppCompatActivity() {
 
     private fun selectTool(i: Int) {
         tool = i
+        if (i != 4) wandOn = false
+        canvas.wandMode = i == 4 && wandOn
         canvas.cropping = i == 0
         tabs.removeAllViews()
         tabs.addView(UiKit.toolTab(this, R.drawable.ic_crop, getString(R.string.crop), i == 0) { selectTool(0) })
@@ -174,7 +180,25 @@ class PhotoEditorActivity : AppCompatActivity() {
         r.addView(UiKit.pill(this, getString(R.string.ai_smart_crop)) { smartCrop() })
         r.addView(UiKit.pill(this, getString(R.string.ai_blur_faces)) { blurFaces() })
         r.addView(UiKit.pill(this, getString(R.string.ai_portrait)) { portraitBlur() })
+        r.addView(UiKit.pill(this, getString(R.string.ai_remove_bg)) { removeBackground() })
+        r.addView(UiKit.pill(this, getString(R.string.ai_wand), wandOn) {
+            wandOn = !wandOn
+            if (wandOn) toast(R.string.ai_wand_hint)
+            selectTool(4)
+        })
         col.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(r) })
+        if (wandOn) col.addView(LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(TextView(context).apply {
+                text = getString(R.string.ai_tolerance); textSize = 13f; setTextColor(Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams(UiKit.dp(context, 92), ViewGroup.LayoutParams.WRAP_CONTENT)
+            })
+            addView(Slider(context).apply {
+                valueFrom = 8f; valueTo = 90f; value = wandTol.toFloat()
+                addOnChangeListener { _, v, _ -> wandTol = v.toInt() }
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+        })
         col.addView(TextView(this).apply {
             text = getString(R.string.ai_note); textSize = 11f; setTextColor(0x99FFFFFF.toInt())
             setPadding(0, UiKit.dp(context, 6), 0, 0)
@@ -214,6 +238,32 @@ class PhotoEditorActivity : AppCompatActivity() {
             if (faces.isEmpty()) { toast(R.string.ai_no_faces); return@launch }
             val out = withContext(Dispatchers.Default) { runCatching { SmartTools.pixelateFaces(b, faces) }.getOrNull() }
             if (out != null) transform { out }
+        }
+    }
+
+    /** Automatic cut-out of the background (on the phone). Saved as PNG to keep the transparency. */
+    private fun removeBackground() {
+        val b = bmp ?: return
+        toast(R.string.saving)
+        lifecycleScope.launch {
+            val out = withContext(Dispatchers.Default) {
+                try { BgRemover.auto(b, SmartTools.detectFaces(b)) } catch (t: Throwable) { null }
+            }
+            if (out == null) { toast(R.string.photo_failed); return@launch }
+            transparent = true
+            transform { out }
+            toast(R.string.ai_bg_removed)
+        }
+    }
+
+    /** Magic wand: remove the colour area that was tapped. */
+    private fun wandCut(x: Int, y: Int) {
+        val b = bmp ?: return
+        lifecycleScope.launch {
+            val out = withContext(Dispatchers.Default) { runCatching { BgRemover.byColor(b, x, y, wandTol) }.getOrNull() }
+            if (out == null) { toast(R.string.photo_failed); return@launch }
+            transparent = true
+            transform { out }
         }
     }
 
@@ -275,7 +325,8 @@ class PhotoEditorActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ save
 
     private fun askSave() {
-        val canReplace = MediaTypes.ext(src.name) in setOf("jpg", "jpeg", "png") && src.canWrite()
+        val ext = MediaTypes.ext(src.name)
+        val canReplace = ext in setOf("jpg", "jpeg", "png") && src.canWrite() && (!transparent || ext == "png")
         val items = if (canReplace) arrayOf(getString(R.string.save_copy), getString(R.string.replace_original)) else arrayOf(getString(R.string.save_copy))
         MaterialAlertDialogBuilder(this).setTitle(R.string.save)
             .setItems(items) { _, i -> save(replace = i == 1) }
@@ -290,8 +341,8 @@ class PhotoEditorActivity : AppCompatActivity() {
                 runCatching {
                     val out = Bitmap.createBitmap(b.width, b.height, Bitmap.Config.ARGB_8888)
                     Canvas(out).drawBitmap(b, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG).apply { colorFilter = ColorMatrixColorFilter(matrix) })
-                    val png = MediaTypes.ext(src.name) == "png"
-                    val target = if (replace) src
+                    val png = MediaTypes.ext(src.name) == "png" || transparent
+                    val target = if (replace && (!transparent || MediaTypes.ext(src.name) == "png")) src
                         else ZipUtil.uniqueName(src.parentFile!!, src.nameWithoutExtension + "_edited", if (png) ".png" else ".jpg")
                     FileOutputStream(target).use { out.compress(if (png) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 95, it) }
                     target

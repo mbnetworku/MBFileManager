@@ -32,6 +32,24 @@ class VideoPlayerActivity : AppCompatActivity() {
     private lateinit var tCur: TextView
     private lateinit var tDur: TextView
     private lateinit var path: String
+    private lateinit var titleView: TextView
+    private lateinit var prevBtn: ImageButton
+    private lateinit var nextBtn: ImageButton
+    private lateinit var speedBtn: TextView
+    private var siblings: List<String> = emptyList()
+    private var index = 0
+    private var mediaPlayer: android.media.MediaPlayer? = null
+    private val speeds = floatArrayOf(1f, 1.5f, 2f, 0.5f)
+    private var speedIdx = 0
+    private var scanDir = 0
+    private val scanner = object : Runnable {
+        override fun run() {
+            if (scanDir == 0 || !prepared) return
+            val t = (video.currentPosition + scanDir * 3000).coerceIn(0, video.duration)
+            video.seekTo(t); seek.progress = t; tCur.text = fmt(t)
+            handler.postDelayed(this, 250)
+        }
+    }
     private val handler = Handler(Looper.getMainLooper())
     private var prepared = false
     private var resumePos = 0
@@ -59,6 +77,11 @@ class VideoPlayerActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or WindowManager.LayoutParams.FLAG_FULLSCREEN)
         window.setBackgroundDrawable(ColorDrawable(Color.BLACK))
         val f = File(path)
+        siblings = try {
+            f.parentFile?.listFiles()?.filter { it.isFile && MediaTypes.isVideo(it.name) }
+                ?.sortedBy { it.name.lowercase() }?.map { it.absolutePath } ?: listOf(path)
+        } catch (e: Throwable) { listOf(path) }
+        index = siblings.indexOf(path).coerceAtLeast(0)
 
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         video = VideoView(this)
@@ -71,12 +94,13 @@ class VideoPlayerActivity : AppCompatActivity() {
             background = UiKit.scrim(true)
             setPadding(UiKit.dp(context, 6), UiKit.dp(context, 4), UiKit.dp(context, 6), UiKit.dp(context, 16))
             addView(UiKit.iconButton(context, R.drawable.ic_back_white, getString(R.string.close)) { finish() })
-            addView(TextView(context).apply {
+            titleView = TextView(context).apply {
                 text = f.name; textSize = 16f; setTextColor(Color.WHITE); maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.MIDDLE
                 setPadding(UiKit.dp(context, 6), 0, UiKit.dp(context, 6), 0)
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            })
+            }
+            addView(titleView)
             addView(UiKit.iconButton(context, R.drawable.ic_edit, getString(R.string.edit_video)) {
                 video.pause()
                 startActivity(Intent(context, VideoEditorActivity::class.java).putExtra(VideoEditorActivity.EXTRA_PATH, path))
@@ -96,6 +120,15 @@ class VideoPlayerActivity : AppCompatActivity() {
             })
         }
         play = UiKit.iconButton(this, R.drawable.ic_pause, getString(R.string.play)) { togglePlay() }
+        prevBtn = UiKit.iconButton(this, R.drawable.ic_prev, getString(R.string.previous)) { openAt(index - 1) }
+        nextBtn = UiKit.iconButton(this, R.drawable.ic_next, getString(R.string.next)) { openAt(index + 1) }
+        speedBtn = TextView(this).apply {
+            text = "1x"; textSize = 14f; setTextColor(Color.WHITE); gravity = Gravity.CENTER
+            contentDescription = getString(R.string.speed)
+            setPadding(UiKit.dp(context, 10), UiKit.dp(context, 8), UiKit.dp(context, 10), UiKit.dp(context, 8))
+            setOnClickListener { cycleSpeed() }
+        }
+        updateNav()
         bottomBar = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = UiKit.scrim(false)
@@ -106,9 +139,12 @@ class VideoPlayerActivity : AppCompatActivity() {
             })
             addView(LinearLayout(context).apply {
                 gravity = Gravity.CENTER
-                addView(UiKit.iconButton(context, R.drawable.ic_replay_10, "-10") { video.seekTo((video.currentPosition - 10000).coerceAtLeast(0)) })
+                addView(prevBtn)
+                addView(holdable(UiKit.iconButton(context, R.drawable.ic_replay_10, "-10") { video.seekTo((video.currentPosition - 10000).coerceAtLeast(0)) }, -1))
                 addView(play)
-                addView(UiKit.iconButton(context, R.drawable.ic_forward_10, "+10") { video.seekTo((video.currentPosition + 10000).coerceAtMost(video.duration)) })
+                addView(holdable(UiKit.iconButton(context, R.drawable.ic_forward_10, "+10") { video.seekTo((video.currentPosition + 10000).coerceAtMost(video.duration)) }, 1))
+                addView(nextBtn)
+                if (android.os.Build.VERSION.SDK_INT >= 23) addView(speedBtn)
             })
         }
         root.addView(bottomBar, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
@@ -116,17 +152,67 @@ class VideoPlayerActivity : AppCompatActivity() {
 
         video.setOnPreparedListener { mp ->
             prepared = true
+            mediaPlayer = mp
+            applySpeed()
             seek.max = mp.duration
             tDur.text = fmt(mp.duration)
             if (resumePos > 0) video.seekTo(resumePos)
             if (wasPlaying) video.start()
         }
-        video.setOnCompletionListener { play.setImageResource(R.drawable.ic_play); showBars(true) }
+        video.setOnCompletionListener {
+            if (index + 1 < siblings.size) openAt(index + 1) else { play.setImageResource(R.drawable.ic_play); showBars(true) }
+        }
         video.setOnErrorListener { _, _, _ ->
             Toast.makeText(this, R.string.video_failed, Toast.LENGTH_LONG).show(); true
         }
         video.setVideoPath(path)
         handler.post(ticker)
+    }
+
+    private fun openAt(i: Int) {
+        if (i < 0 || i >= siblings.size) return
+        index = i
+        path = siblings[i]
+        scanDir = 0
+        prepared = false; mediaPlayer = null; resumePos = 0; wasPlaying = true
+        seek.progress = 0; tCur.text = "0:00"
+        titleView.text = File(path).name
+        video.stopPlayback()
+        video.setVideoPath(path)
+        updateNav()
+    }
+
+    private fun updateNav() {
+        prevBtn.alpha = if (index > 0) 1f else 0.35f
+        nextBtn.alpha = if (index + 1 < siblings.size) 1f else 0.35f
+    }
+
+    private fun holdable(b: ImageButton, dir: Int): ImageButton {
+        b.setOnLongClickListener { scanDir = dir; handler.post(scanner); true }
+        b.setOnTouchListener { _, e ->
+            if (e.actionMasked == android.view.MotionEvent.ACTION_UP || e.actionMasked == android.view.MotionEvent.ACTION_CANCEL) {
+                scanDir = 0; handler.removeCallbacks(scanner)
+            }
+            false
+        }
+        return b
+    }
+
+    private fun cycleSpeed() {
+        speedIdx = (speedIdx + 1) % speeds.size
+        applySpeed()
+    }
+
+    private fun applySpeed() {
+        val sp = speeds[speedIdx]
+        speedBtn.text = (if (sp == sp.toInt().toFloat()) sp.toInt().toString() else sp.toString()) + "x"
+        if (android.os.Build.VERSION.SDK_INT < 23) return
+        val mp = mediaPlayer ?: return
+        try {
+            val playing = video.isPlaying
+            mp.playbackParams = mp.playbackParams.setSpeed(sp)
+            if (!playing) video.pause()
+        } catch (e: Throwable) { }
     }
 
     private fun togglePlay() {
@@ -164,7 +250,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         if (prepared) { video.seekTo(resumePos); if (wasPlaying) video.start() }
     }
 
-    override fun onDestroy() { handler.removeCallbacks(ticker); super.onDestroy() }
+    override fun onDestroy() { handler.removeCallbacks(ticker); handler.removeCallbacks(scanner); super.onDestroy() }
 
     override fun finish() { super.finish(); DeviceUi.exitSlide(this) }
 

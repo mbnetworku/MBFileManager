@@ -290,10 +290,16 @@
     <string name="ai_enhanced">Auto enhance applied</string>
     <string name="ai_cropped_faces">Cropped around the faces</string>
     <string name="ai_cropped_area">Cropped to the most interesting area</string>
-    <string name="ai_note">Smart tools run on your phone. Nothing is uploaded.</string>
+    <string name="ai_note">Smart tools run on your phone. Nothing is uploaded. Background removal works best when the subject stands out; use Magic wand to fix the rest.</string>
     <string name="offline_mode">Block internet for AI</string>
     <string name="connect_once">Connect</string>
     <string name="about_privacy">Privacy: photo, video and smart (AI) editing tools work only on your phone. The switch "Block internet for AI" (on by default) keeps them that way. The app uses the internet only to check for and download updates.</string>
     <string name="net_blocked">AI: on this phone only</string>
     <string name="net_allowed">AI: internet allowed</string>
+    <string name="ai_remove_bg">Remove background</string>
+    <string name="ai_wand">Magic wand</string>
+    <string name="ai_wand_hint">Tap the background you want to remove</string>
+    <string name="ai_tolerance">Tolerance</string>
+    <string name="ai_bg_removed">Background removed. The photo will be saved as PNG to keep it transparent.</string>
+    <string name="speed">Speed</string>
 </resources>

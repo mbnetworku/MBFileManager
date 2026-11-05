@@ -2,12 +2,14 @@ package com.mbnetwork.filemanager
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
+import android.graphics.Shader
 import android.view.MotionEvent
 import android.view.View
 import kotlin.math.abs
@@ -39,6 +41,24 @@ class EditorCanvas(ctx: Context) : View(ctx) {
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = Color.WHITE; strokeWidth = 2 * d }
     private val grid = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = 0x66FFFFFF; strokeWidth = d }
     private val handle = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+
+    /** Magic wand: tap a point of the photo (bitmap pixels). */
+    var wandMode = false
+    var onWandTap: ((Int, Int) -> Unit)? = null
+    private var downX = 0f
+    private var downY = 0f
+
+    /** Checkerboard shown behind transparent areas. */
+    private val checker = Paint().apply {
+        val cell = (10 * d).toInt().coerceAtLeast(6)
+        val tile = Bitmap.createBitmap(cell * 2, cell * 2, Bitmap.Config.ARGB_8888)
+        val tc = Canvas(tile)
+        tc.drawColor(0xFFE8E8E8.toInt())
+        val dark = Paint().apply { color = 0xFFC8C8C8.toInt() }
+        tc.drawRect(0f, 0f, cell.toFloat(), cell.toFloat(), dark)
+        tc.drawRect(cell.toFloat(), cell.toFloat(), (cell * 2).toFloat(), (cell * 2).toFloat(), dark)
+        shader = BitmapShader(tile, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
+    }
 
     private var mode = 0        // 0 none, 1 move, 2 TL, 3 TR, 4 BL, 5 BR
     private var lx = 0f
@@ -78,6 +98,7 @@ class EditorCanvas(ctx: Context) : View(ctx) {
 
     override fun onDraw(c: Canvas) {
         val b = bitmap ?: return
+        if (b.hasAlpha()) c.drawRect(dst, checker)
         c.drawBitmap(b, null, dst, paint)
         if (!cropping) return
         c.drawRect(dst.left, dst.top, dst.right, crop.top, dim)
@@ -98,6 +119,20 @@ class EditorCanvas(ctx: Context) : View(ctx) {
     private fun near(x: Float, y: Float, px: Float, py: Float) = abs(x - px) < 30 * d && abs(y - py) < 30 * d
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
+        if (wandMode && !cropping) {
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y }
+                MotionEvent.ACTION_UP -> {
+                    val b = bitmap
+                    if (b != null && abs(e.x - downX) < 14 * d && abs(e.y - downY) < 14 * d && dst.contains(e.x, e.y)) {
+                        val bx = ((e.x - dst.left) / dst.width() * b.width).toInt().coerceIn(0, b.width - 1)
+                        val by = ((e.y - dst.top) / dst.height() * b.height).toInt().coerceIn(0, b.height - 1)
+                        onWandTap?.invoke(bx, by)
+                    }
+                }
+            }
+            return true
+        }
         if (!cropping) return false
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {

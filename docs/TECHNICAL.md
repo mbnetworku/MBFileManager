@@ -50,6 +50,7 @@ app/src/main/java/com/mbnetwork/filemanager/
   MusicPlayer.kt, MusicService.kt, PlayerActivity.kt, EqualizerView.kt   music
   PhotoViewerActivity.kt, ZoomImageView.kt, PhotoEditorActivity.kt, EditorCanvas.kt, ImageUtil.kt   photos
   VideoPlayerActivity.kt, VideoEditorActivity.kt, VideoTrimmer.kt   video
+  BgRemover.kt                                                       on-device background removal (k-means + flood fill magic wand, PNG output)
   OfficeActivity.kt, OfficeDoc.kt   Word / Excel / PowerPoint viewer + editor (OOXML = zipped XML)
   TextEditorActivity.kt    notepad
   ZipUtil.kt               zip / unzip (zip-slip safe)
@@ -153,7 +154,7 @@ Filters and sliders are combined into one `ColorMatrix` used for preview and for
 `portraitBlur` (blurred copy + radial mask around the faces). Nothing is uploaded. `FaceDetector` finds front-facing faces only.
 
 ### Video
-`VideoPlayerActivity` (VideoView, ±10 s, seek bar). `VideoEditorActivity` trims, mutes and rotates **without re-encoding**:
+`VideoPlayerActivity` (VideoView, ±10 s, previous/next sibling video, hold-to-scan, speed via playbackParams on API 23+, seek bar). `VideoEditorActivity` trims, mutes and rotates **without re-encoding**:
 `VideoTrimmer` copies samples between two times with `MediaExtractor` + `MediaMuxer` into an MP4 (start snaps to the previous
 key frame). Works with H.264 / H.265 + AAC (MP4, MOV, 3GP); other codecs show a clear message.
 

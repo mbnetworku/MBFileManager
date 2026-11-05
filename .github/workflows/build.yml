@@ -15,7 +15,7 @@ jobs:
       - name: Offline guarantee - editing and AI code must not use the network
         run: |
           D=app/src/main/java/com/mbnetwork/filemanager
-          FILES="$D/SmartTools.kt $D/PhotoEditorActivity.kt $D/EditorCanvas.kt $D/ImageUtil.kt $D/PhotoViewerActivity.kt $D/ZoomImageView.kt $D/VideoEditorActivity.kt $D/VideoTrimmer.kt $D/VideoPlayerActivity.kt"
+          FILES="$D/SmartTools.kt $D/PhotoEditorActivity.kt $D/EditorCanvas.kt $D/ImageUtil.kt $D/PhotoViewerActivity.kt $D/ZoomImageView.kt $D/VideoEditorActivity.kt $D/VideoTrimmer.kt $D/VideoPlayerActivity.kt $D/BgRemover.kt"
           if grep -nE "java\.net|HttpURLConnection|HttpsURLConnection|okhttp|WebView|https?://|URL\(" $FILES; then
             echo "::error::Network code found in an editing / AI file"; exit 1
           fi
