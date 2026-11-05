@@ -49,7 +49,7 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
         val topInset = (requireActivity() as MainActivity).topInset
         if (!DeviceUi.isLarge(requireContext())) view.findViewById<RecyclerView>(R.id.list).apply {
             clipToPadding = false
-            setPadding(paddingLeft, paddingTop + topInset, paddingRight, (100 * resources.displayMetrics.density).toInt())
+            setPadding(paddingLeft, paddingTop + topInset, paddingRight, (requireActivity() as MainActivity).bottomInset + (16 * resources.displayMetrics.density).toInt())
         }
         swipe.setProgressViewOffset(false, topInset, topInset + (64 * resources.displayMetrics.density).toInt())
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)

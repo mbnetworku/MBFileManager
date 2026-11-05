@@ -31,7 +31,12 @@
     <style name="MBSheet" parent="Widget.Material3.BottomSheet.Modal">
         <item name="backgroundTint">@android:color/transparent</item>
     </style>
+    <style name="NavLabel" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textSize">11sp</item>
+    </style>
     <style name="GlassIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:height">@dimen/nav_indicator_h</item>
+        <item name="android:width">@dimen/nav_indicator_w</item>
         <item name="android:color">@color/nav_indicator</item>
         <item name="shapeAppearance">@style/GlassIndicatorShape</item>
     </style>

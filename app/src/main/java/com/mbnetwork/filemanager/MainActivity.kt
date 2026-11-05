@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
     /** Space (px) the screen must leave at the top because the glass bar floats over it (0 on tablet / TV). */
     var topInset = 0
         private set
+    /** Space (px) the screen leaves at the bottom for the floating tab bar (0 on tablet / TV / car). */
+    var bottomInset = 0
+        private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
         prefs = Prefs(this)
@@ -56,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         val barPx = android.util.TypedValue.complexToDimensionPixelSize(tv.data, resources.displayMetrics)
         val bigScreen = DeviceUi.isLarge(this)
         topInset = if (bigScreen) 0 else barPx                 // phones: content starts under the glass bar
+        bottomInset = if (bigScreen) 0 else resources.getDimensionPixelSize(R.dimen.nav_bottom_inset)
         if (bigScreen) findViewById<View>(R.id.row).setPadding(0, barPx, 0, 0)  // tablet / TV: content starts below it
         findViewById<GlassView>(R.id.topGlass).setup(container, shape = GlassView.SHAPE_NONE, rim = GlassView.RIM_BOTTOM, tintAlpha = 0.62f)
         findViewById<GlassView>(R.id.bottomGlass).setup(container, capsule = true, tintAlpha = 0.58f)
@@ -111,9 +115,9 @@ class MainActivity : AppCompatActivity() {
         val reselected = NavigationBarView.OnItemReselectedListener { popToRoot() }
         // landscape: keep the capsule compact and centered
         if (resources.configuration.screenWidthDp > 560) (bottomGlass.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
-            width = (440 * resources.displayMetrics.density).toInt()
+            width = (330 * resources.displayMetrics.density).toInt()
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL
-            bottomMargin = (8 * resources.displayMetrics.density).toInt()
+            bottomMargin = (6 * resources.displayMetrics.density).toInt()
         }
         // the glass capsule is the background; iOS blue for the selected tab
         bottom.background = null

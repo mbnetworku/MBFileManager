@@ -65,8 +65,13 @@
                 android:id="@+id/bottomNav"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="@dimen/nav_min_height"
                 app:elevation="0dp"
                 app:itemActiveIndicatorStyle="@style/GlassIndicator"
+                app:itemPaddingBottom="@dimen/nav_pad_bottom"
+                app:itemPaddingTop="@dimen/nav_pad_top"
+                app:itemTextAppearanceActive="@style/NavLabel"
+                app:itemTextAppearanceInactive="@style/NavLabel"
                 app:labelVisibilityMode="labeled"
                 app:menu="@menu/bottom_nav" />
         </com.mbnetwork.filemanager.GlassView>

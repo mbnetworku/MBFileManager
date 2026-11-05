@@ -131,9 +131,9 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         }
         if (!DeviceUi.isLarge(requireContext())) {
             val dd = resources.displayMetrics.density
-            (fab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = (104 * dd).toInt()
+            (fab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = main.bottomInset + (8 * dd).toInt()
             (selectBar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = (14 * dd).toInt()
-            recycler.setPadding(recycler.paddingLeft, recycler.paddingTop, recycler.paddingRight, (180 * dd).toInt())
+            recycler.setPadding(recycler.paddingLeft, recycler.paddingTop, recycler.paddingRight, main.bottomInset + (84 * dd).toInt())
         }
         view.findViewById<View>(R.id.selShare).setOnClickListener { shareMany(adapter.selectedItems()) }
         view.findViewById<View>(R.id.selCopy).setOnClickListener { setClip(adapter.selectedItems(), false) }

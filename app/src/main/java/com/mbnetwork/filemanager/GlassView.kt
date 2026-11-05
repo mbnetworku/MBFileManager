@@ -63,6 +63,7 @@ class GlassView @JvmOverloads constructor(
     private val liquidOn = Prefs(context).liquidGlass
     private val userTransparency = Prefs(context).transparency
     private var broken = false
+    private val blurOk = !DeviceUi.lowPower(context)
 
     private val density = resources.displayMetrics.density
     private val night get() =
@@ -148,7 +149,7 @@ class GlassView @JvmOverloads constructor(
 
     private fun refresh() {
         val src = source ?: return
-        if (!liquidOn || broken || width < 8 || height < 8 || !isShown) return
+        if (!liquidOn || !blurOk || broken || width < 8 || height < 8 || !isShown) return
         try {
             val w = (width / SCALE).coerceAtLeast(2)
             val h = (height / SCALE).coerceAtLeast(2)

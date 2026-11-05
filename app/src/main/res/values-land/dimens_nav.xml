@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- landscape phone / car radio: even smaller -->
+    <dimen name="nav_min_height">46dp</dimen>
+    <dimen name="nav_pad_top">3dp</dimen>
+    <dimen name="nav_pad_bottom">4dp</dimen>
+    <dimen name="nav_indicator_h">22dp</dimen>
+    <dimen name="nav_indicator_w">46dp</dimen>
+    <dimen name="nav_bottom_inset">64dp</dimen>
+</resources>

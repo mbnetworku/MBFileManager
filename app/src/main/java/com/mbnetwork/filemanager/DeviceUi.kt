@@ -19,8 +19,21 @@ object DeviceUi {
             ctx.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
     }
 
-    /** Tablets and TVs get the side rail + grid layout. */
-    fun isLarge(ctx: Context) = isTv(ctx) || ctx.resources.configuration.smallestScreenWidthDp >= 600
+    /** Android-based car radios / head units. */
+    fun isCar(ctx: Context): Boolean {
+        val ui = ctx.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+        return ui?.currentModeType == Configuration.UI_MODE_TYPE_CAR ||
+            ctx.packageManager.hasSystemFeature("android.hardware.type.automotive")
+    }
+
+    /** TVs, car radios and weak devices skip the live blur (plain frosted glass instead) to stay smooth. */
+    fun lowPower(ctx: Context): Boolean {
+        val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+        return isTv(ctx) || isCar(ctx) || am?.isLowRamDevice == true
+    }
+
+    /** Tablets, TVs and car radios get the side rail + grid layout. */
+    fun isLarge(ctx: Context) = isTv(ctx) || isCar(ctx) || ctx.resources.configuration.smallestScreenWidthDp >= 600
 
     private fun contentWidthDp(ctx: Context) = ctx.resources.configuration.screenWidthDp - if (isLarge(ctx)) 80 else 0
 
@@ -63,7 +76,7 @@ object DeviceUi {
         val mode = when (prefs.theme) {
             1 -> AppCompatDelegate.MODE_NIGHT_NO
             2 -> AppCompatDelegate.MODE_NIGHT_YES
-            else -> if (isTv(ctx)) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            else -> if (isTv(ctx) || isCar(ctx)) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
         }
         if (AppCompatDelegate.getDefaultNightMode() != mode) AppCompatDelegate.setDefaultNightMode(mode)
     }

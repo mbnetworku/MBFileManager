@@ -48,7 +48,7 @@ class HomeFragment : Fragment(), Refreshable {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, s: Bundle?): View {
         box = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(px(16), main.topInset + px(2), px(16), px(if (DeviceUi.isLarge(context)) 24 else 120))
+            setPadding(px(16), main.topInset + px(2), px(16), main.bottomInset + px(24))
         }
         return ScrollView(requireContext()).apply { addView(box); isFillViewport = true; clipToPadding = false }
     }
