@@ -65,14 +65,29 @@ class FileAdapter(
         val ctx = h.itemView.context
         h.name.text = f.name
         h.itemView.alpha = if (f.isHidden) 0.6f else 1f
-        glassColor?.let { (h.itemView as? MaterialCardView)?.setCardBackgroundColor(it) }
+        (h.itemView as? MaterialCardView)?.let { DeviceUi.styleCard(it) }
 
         val (icon, color) = typeOf(f)
         h.icon.setImageResource(icon)
         h.icon.tag = null
         if (mode == ICONS) bindIconMode(h, f, icon, color) else {
+            // glossy gradient tile with white symbol; real thumbnail when available
+            val dd = ctx.resources.displayMetrics.density
+            h.icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, color))
+            ViewCompat.setBackgroundTintList(h.icon, null)
             ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
-            ViewCompat.setBackgroundTintList(h.icon, ColorStateList.valueOf(ContextCompat.getColor(ctx, color)))
+            h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
+            val p = ((if (mode == GRID) 16 else 11) * dd).toInt(); h.icon.setPadding(p, p, p, p)
+            h.icon.clipToOutline = true
+            h.icon.outlineProvider = object : ViewOutlineProvider() {
+                override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, 12 * dd)
+            }
+            if (!f.isDir && ThumbLoader.canThumb(f.name)) ThumbLoader.load(ctx, f.path, h.icon) {
+                ImageViewCompat.setImageTintList(h.icon, null)
+                val apk = f.name.lowercase().endsWith(".apk")
+                h.icon.setPadding(if (apk) p / 3 else 0, if (apk) p / 3 else 0, if (apk) p / 3 else 0, if (apk) p / 3 else 0)
+                h.icon.scaleType = if (apk) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
+            }
         }
 
         h.chevron?.visibility = if (f.isDir && !selectionMode) View.VISIBLE else View.GONE
@@ -107,8 +122,8 @@ class FileAdapter(
             ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.icon_folder)))
             return
         }
-        h.icon.setBackgroundResource(R.drawable.bg_thumb)
-        ViewCompat.setBackgroundTintList(h.icon, ColorStateList.valueOf(ContextCompat.getColor(ctx, color)))
+        h.icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, color), 14f)
+        ViewCompat.setBackgroundTintList(h.icon, null)
         ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
         h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
         val p = (22 * d).toInt(); h.icon.setPadding(p, p, p, p)
@@ -118,7 +133,7 @@ class FileAdapter(
                 h.icon.setPadding(0, 0, 0, 0)
                 val apk = f.name.lowercase().endsWith(".apk")
                 h.icon.scaleType = if (apk) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
-                if (apk) { val q = (10 * d).toInt(); h.icon.setPadding(q, q, q, q); ViewCompat.setBackgroundTintList(h.icon, ColorStateList.valueOf(0x22808080)) }
+                if (apk) { val q = (10 * d).toInt(); h.icon.setPadding(q, q, q, q); h.icon.background = DeviceUi.tile(ctx, 0xFF607D8B.toInt(), 14f) }
             }
         }
     }
@@ -136,6 +151,11 @@ class FileAdapter(
 
         fun typeOf(f: FileItem): Pair<Int, Int> {
             if (f.isDir) return R.drawable.ic_folder to R.color.t_folder
+            if (OfficeDoc.isOffice(f.name)) return when (OfficeDoc.kind(f.name)) {
+                "xlsx" -> R.drawable.ic_doc to R.color.t_excel
+                "pptx" -> R.drawable.ic_doc to R.color.t_ppt
+                else -> R.drawable.ic_doc to R.color.t_doc
+            }
             return when (f.name.substringAfterLast('.', "").lowercase()) {
                 in IMAGE -> R.drawable.ic_image to R.color.t_image
                 in VIDEO -> R.drawable.ic_video to R.color.t_video

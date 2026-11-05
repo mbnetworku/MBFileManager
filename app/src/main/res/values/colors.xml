@@ -28,4 +28,6 @@
     <color name="sheet_bg">#F7F8FB</color>
     <color name="row_divider">#1F000000</color>
     <color name="icon_folder">#4FA3F7</color>
+    <color name="t_excel">#21A366</color>
+    <color name="t_ppt">#E8710A</color>
 </resources>

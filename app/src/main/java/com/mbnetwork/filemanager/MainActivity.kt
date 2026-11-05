@@ -1,6 +1,8 @@
 package com.mbnetwork.filemanager
 
 import android.os.Bundle
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import android.view.View
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.navigationrail.NavigationRailView
@@ -18,6 +20,15 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var prefs: Prefs
         private set
+    private lateinit var drawer: DrawerLayout
+    private lateinit var sidebar: Sidebar
+    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var railNav: NavigationRailView
+    /** Location chosen in the sidebar while another tab was open. */
+    var pendingLocation: String? = null
+    private val drawerBack = object : androidx.activity.OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = closeDrawer()
+    }
     private var currentTab = R.id.nav_files
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +36,34 @@ class MainActivity : AppCompatActivity() {
         DeviceUi.applyTheme(this, prefs) // White / Black / System, chosen in the menu
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(findViewById<MaterialToolbar>(R.id.toolbar))
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
+        // Liquid Glass: soft colored backdrop behind translucent surfaces
+        if (DeviceUi.liquid(this)) {
+            window.setBackgroundDrawable(DeviceUi.liquidBackground(this))
+            toolbar.background?.mutate()?.alpha = 200
+        }
+
+        // Sidebar (hidden until opened with the ☰ button or a swipe from the left edge)
+        drawer = findViewById(R.id.drawer)
+        sidebar = Sidebar(this, findViewById(R.id.drawerContent))
+        findViewById<View>(R.id.drawerPanel).setBackgroundColor(DeviceUi.glass(this, R.color.sheet_bg))
+        val toggle = androidx.appcompat.app.ActionBarDrawerToggle(this, drawer, toolbar, R.string.drawer_open, R.string.drawer_close)
+        drawer.addDrawerListener(toggle)
+        toggle.syncState()
+        drawer.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerStateChanged(state: Int) {
+                if (state == DrawerLayout.STATE_SETTLING && !drawer.isDrawerOpen(GravityCompat.START)) sidebar.build()
+            }
+            override fun onDrawerOpened(v: View) {
+                drawerBack.isEnabled = true
+                // newest callback wins: re-register so Back closes the sidebar first
+                drawerBack.remove(); onBackPressedDispatcher.addCallback(this@MainActivity, drawerBack)
+            }
+            override fun onDrawerClosed(v: View) { drawerBack.isEnabled = false }
+        })
+        sidebar.build()
 
         // Phone: bottom bar. Tablet / Android TV: side rail.
         val bottom = findViewById<BottomNavigationView>(R.id.bottomNav)
@@ -42,12 +80,16 @@ class MainActivity : AppCompatActivity() {
         }
         bottom.setBackgroundColor(DeviceUi.glass(this, R.color.card_bg))
         rail.setBackgroundColor(DeviceUi.glass(this, R.color.card_bg))
+        bottomNav = bottom; railNav = rail
         bottom.setOnItemSelectedListener(listener)
         rail.setOnItemSelectedListener(listener)
         if (savedInstanceState == null) show(FilesFragment())
 
         // Ask for storage permission only if this Android version needs it and it is missing.
         PermissionHelper.requestIfNeeded(this)
+
+        // Look for a newer version (at most once a day)
+        Updater.check(this, lifecycleScope, manual = false)
 
         // Root features exist only on rooted devices.
         if (!RootShell.deviceRooted) prefs.rootMode = false
@@ -63,6 +105,23 @@ class MainActivity : AppCompatActivity() {
                 currentFragment()?.let { (it as? Refreshable)?.refresh() }
             }
         }
+    }
+
+    fun openDrawer() = drawer.openDrawer(GravityCompat.START)
+    fun closeDrawer() = drawer.closeDrawer(GravityCompat.START)
+    fun checkUpdates() = Updater.check(this, lifecycleScope, manual = true)
+
+    fun selectTab(id: Int) {
+        closeDrawer()
+        if (DeviceUi.isLarge(this)) railNav.selectedItemId = id else bottomNav.selectedItemId = id
+    }
+
+    /** Sidebar: open a folder in the Files tab. */
+    fun openLocation(path: String) {
+        closeDrawer()
+        val f = currentFragment()
+        if (f is FilesFragment) f.openLocation(path)
+        else { pendingLocation = path; selectTab(R.id.nav_files) }
     }
 
     private fun show(f: Fragment) {

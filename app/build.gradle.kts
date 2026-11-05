@@ -11,16 +11,37 @@ android {
         applicationId = "com.mbnetwork.filemanager"
         minSdk = 21          // Android 5.0 Lollipop
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 6
+        versionName = "1.5"
+    }
+
+    // One fixed key for every build, so new versions install as UPDATES over old ones.
+    // The key comes from GitHub Secrets (never committed). Without it, the debug key is used.
+    val ksPath = System.getenv("MBFM_KEYSTORE")
+    val hasKey = ksPath != null && file(ksPath).exists()
+    signingConfigs {
+        create("mbfm") {
+            if (hasKey) {
+                storeFile = file(ksPath!!)
+                storePassword = System.getenv("MBFM_STORE_PASSWORD")
+                keyAlias = System.getenv("MBFM_KEY_ALIAS")
+                keyPassword = System.getenv("MBFM_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
+        debug {
+            if (hasKey) signingConfig = signingConfigs.getByName("mbfm")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Signed with the debug key so the release APK is installable without extra setup.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (hasKey) "mbfm" else "debug")
         }
     }
 
@@ -43,6 +64,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.drawerlayout:drawerlayout:1.2.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")

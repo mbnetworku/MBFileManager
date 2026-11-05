@@ -34,10 +34,17 @@
 
 ## ✨ Features
 
+### 🧭 Sidebar
+- Swipe from the left or tap ☰ to open, and it hides again when you're done
+- All storage with usage bars (internal, SD card, USB), quick folders (Downloads, Camera, Pictures, Music, Videos, Documents), OBB, Recycle Bin, Apps
+- Root places (`Android/data`, `/`) only on rooted devices
+
 ### 📁 File Explorer
 - **Icons view** with real photo/video thumbnails and APK icons, or **List view** (⋮ → View)
 - **Select mode**: tick many files → glass action bar: **Share · Copy · Move · Zip · Delete · More**
 - **Action sheet**: long-press any file → share straight to an app, copy, move, zip, rename, details, delete
+- 🖼️ **Thumbnails everywhere**: photos, video frames, music album art, PDF first page, APK icons
+- 📄 **Office viewer & editor**: Word `.docx` (view formatted, edit text), Excel `.xlsx` (sheets grid, edit cells), PowerPoint `.pptx` (slides, edit text)
 - 🗜️ **Zip & Unzip**: compress files/folders to `.zip`; tap a `.zip` to extract it
 - Browse **internal storage**, **SD card** and **USB drives**
 - Open, share, rename, copy, move, paste, delete, details
@@ -81,7 +88,12 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 | **Tablet** | Grid view with side navigation rail |
 | **Android TV** | Grid view, remote/D-pad friendly with a glowing focus outline, listed on the TV home screen |
 
-**Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
+**Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus **Liquid Glass** (frosted see-through surfaces over a soft blue/teal backdrop) and a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
+
+## 🔄 Updates
+
+- The app checks for new versions automatically, about once a day, or tap **Sidebar → Check for updates**
+- To install new versions **as updates** (no uninstall), builds must be signed with one fixed key stored in GitHub Secrets: `SIGNING_KEY_BASE64`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`
 
 ## 🔐 Permissions: asked only when needed
 

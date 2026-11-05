@@ -41,7 +41,10 @@ object DeviceUi {
         card.setOnFocusChangeListener { v, has ->
             v.animate().scaleX(if (has) 1.06f else 1f).scaleY(if (has) 1.06f else 1f).setDuration(140).start()
             v.translationZ = if (has) 8 * d else 0f
-            (v as? MaterialCardView)?.strokeWidth = if (has) (3 * d).toInt() else 0
+            (v as? MaterialCardView)?.let { c ->
+                if (has) { c.strokeColor = androidx.core.content.ContextCompat.getColor(c.context, R.color.focus_glow); c.strokeWidth = (3 * d).toInt() }
+                else styleCard(c)
+            }
         }
     }
 
@@ -55,10 +58,69 @@ object DeviceUi {
         if (AppCompatDelegate.getDefaultNightMode() != mode) AppCompatDelegate.setDefaultNightMode(mode)
     }
 
+    /** Glossy rounded icon tile: gradient (light -> dark) + white shine on the top half. */
+    fun tile(ctx: Context, color: Int, radiusDp: Float = 12f): android.graphics.drawable.Drawable {
+        val r = radiusDp * ctx.resources.displayMetrics.density
+        fun shade(f: Float) = android.graphics.Color.rgb(
+            (android.graphics.Color.red(color) * f).toInt().coerceIn(0, 255),
+            (android.graphics.Color.green(color) * f).toInt().coerceIn(0, 255),
+            (android.graphics.Color.blue(color) * f).toInt().coerceIn(0, 255))
+        val base = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TL_BR, intArrayOf(shade(1.25f), color, shade(0.75f))
+        ).apply { cornerRadius = r }
+        val shine = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x66FFFFFF, 0x00FFFFFF)
+        ).apply { cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f) }
+        return android.graphics.drawable.LayerDrawable(arrayOf(base, shine)).apply {
+            setLayerInset(1, 0, 0, 0, (24 * ctx.resources.displayMetrics.density).toInt())
+        }
+    }
+
+    fun liquid(ctx: Context) = Prefs(ctx).liquidGlass
+
+    /** Liquid Glass backdrop: soft blue / teal / cyan light blobs (no pink). */
+    fun liquidBackground(ctx: Context): android.graphics.drawable.Drawable {
+        val dm = ctx.resources.displayMetrics
+        val night = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val base = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+            if (night) intArrayOf(0xFF02040A.toInt(), 0xFF061A33.toInt()) else intArrayOf(0xFFE8F1FF.toInt(), 0xFFD3ECF0.toInt()))
+        fun blob(c: Int) = android.graphics.drawable.GradientDrawable().apply {
+            gradientType = android.graphics.drawable.GradientDrawable.RADIAL_GRADIENT
+            gradientRadius = maxOf(dm.widthPixels, dm.heightPixels) * 0.45f
+            colors = intArrayOf(c, c and 0x00FFFFFF)
+        }
+        val a = if (night) 0x66 else 0x88
+        val layers = arrayOf(base, blob((a shl 24) or 0x1E88E5), blob((a shl 24) or 0x00BFA5), blob((a shl 24) or 0x26C6DA))
+        return android.graphics.drawable.LayerDrawable(layers).apply {
+            val w = dm.widthPixels; val h = dm.heightPixels
+            setLayerInset(1, -w / 2, -h / 6, w / 3, h / 2)
+            setLayerInset(2, w / 3, h / 3, -w / 2, -h / 6)
+            setLayerInset(3, -w / 4, h / 2, w / 4, -h / 3)
+        }
+    }
+
+    /** Card look: Liquid Glass = translucent + thin light edge, otherwise normal glass color. */
+    fun styleCard(card: MaterialCardView) {
+        val ctx = card.context
+        card.setCardBackgroundColor(glass(ctx, R.color.card_bg))
+        if (liquid(ctx)) {
+            card.strokeColor = 0x55FFFFFF
+            card.strokeWidth = ctx.resources.displayMetrics.density.toInt().coerceAtLeast(1)
+            card.cardElevation = 0f
+        } else {
+            card.strokeColor = androidx.core.content.ContextCompat.getColor(ctx, R.color.focus_glow)
+            card.strokeWidth = 0
+        }
+    }
+
     /** Applies the user's transparency to a color (glass effect). */
     fun glass(ctx: Context, colorRes: Int): Int {
         val c = androidx.core.content.ContextCompat.getColor(ctx, colorRes)
-        val alpha = (255 * (100 - Prefs(ctx).transparency) / 100).coerceIn(60, 255)
+        val p = Prefs(ctx)
+        val t = if (p.liquidGlass) maxOf(p.transparency, 45) else p.transparency
+        val alpha = (255 * (100 - t) / 100).coerceIn(60, 255)
         return (c and 0x00FFFFFF) or (alpha shl 24)
     }
 
@@ -84,6 +146,11 @@ object DeviceUi {
             valueFrom = 0f; valueTo = 70f; stepSize = 5f; value = prefs.transparency.toFloat()
         }
         box.addView(slider)
+        val liquidSw = com.google.android.material.materialswitch.MaterialSwitch(activity).apply {
+            setText(R.string.liquid_glass); isChecked = prefs.liquidGlass; textSize = 16f
+            setPadding(0, (8 * d).toInt(), 0, 0)
+        }
+        box.addView(liquidSw)
         box.addView(android.widget.TextView(activity).apply { setText(R.string.transparency_hint); alpha = 0.7f })
         MaterialAlertDialogBuilder(activity)
             .setTitle(R.string.appearance)
@@ -91,8 +158,8 @@ object DeviceUi {
             .setPositiveButton(R.string.ok) { _, _ ->
                 val newTheme = group.checkedRadioButtonId - 100
                 val newT = slider.value.toInt()
-                val changed = newTheme != prefs.theme || newT != prefs.transparency
-                prefs.theme = newTheme; prefs.transparency = newT
+                val changed = newTheme != prefs.theme || newT != prefs.transparency || liquidSw.isChecked != prefs.liquidGlass
+                prefs.theme = newTheme; prefs.transparency = newT; prefs.liquidGlass = liquidSw.isChecked
                 applyTheme(activity, prefs)
                 if (changed) activity.recreate()
             }

@@ -108,6 +108,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         fab.setOnLongClickListener { if (clip != null) { clip = null; updateFab(); toast(R.string.cancel_paste) }; true }
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
+        main.pendingLocation?.let { main.pendingLocation = null; view.post { openLocation(it) } }
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -236,6 +237,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         when {
             f.isDir -> navigate(f.path)
             ZipUtil.isZip(f.name) -> confirmExtract(f)
+            OfficeDoc.isOffice(f.name) && OfficeDoc.kind(f.name) != "old" -> openOffice(f)
             ApkInstaller.isApk(f.name) -> installApk(f)
             MusicPlayer.isAudio(f.name) -> playMusic(f)
             TextEditorActivity.isText(f.name) -> openText(f, edit = false)
@@ -363,7 +365,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         val (ic, col) = FileAdapter.typeOf(items[0])
         icon.setImageResource(ic)
         androidx.core.widget.ImageViewCompat.setImageTintList(icon, android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt()))
-        androidx.core.view.ViewCompat.setBackgroundTintList(icon, android.content.res.ColorStateList.valueOf(ContextCompat.getColor(ctx, col)))
+        icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, col))
         val pad = (10 * d).toInt(); icon.setPadding(pad, pad, pad, pad)
         icon.clipToOutline = true
         if (ThumbLoader.canThumb(items[0].name)) ThumbLoader.load(ctx, items[0].path, icon) {
@@ -448,6 +450,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                     }
                 }
                 MusicPlayer.isAudio(single.name) -> addRow(g1, R.string.play_music, R.drawable.ic_play) { playMusic(single) }
+                OfficeDoc.isOffice(single.name) && OfficeDoc.kind(single.name) != "old" ->
+                    addRow(g1, R.string.open_office, R.drawable.ic_doc) { openOffice(single) }
                 ZipUtil.isZip(single.name) -> addRow(g1, R.string.extract, R.drawable.ic_zip) { extract(single) }
             }
             addRow(g1, R.string.open_with, R.drawable.ic_open) { openFile(single, chooser = true) }
@@ -596,6 +600,10 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         }
     }
 
+    private fun openOffice(f: FileItem) {
+        startActivity(Intent(requireContext(), OfficeActivity::class.java).putExtra(OfficeActivity.EXTRA_PATH, f.path))
+    }
+
     private fun openText(f: FileItem, edit: Boolean) {
         startActivity(Intent(requireContext(), TextEditorActivity::class.java)
             .putExtra(TextEditorActivity.EXTRA_PATH, f.path)
@@ -634,6 +642,17 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     // ---- storage chooser ----
+    /** Called from the sidebar. */
+    fun openLocation(path: String) {
+        if (adapter.selectionMode) exitSelect()
+        when {
+            path == "/" -> if (main.rootActive) { limitPath = "/"; navigate("/") }
+                else main.setRootMode(true) { ok -> if (ok) { limitPath = "/"; navigate("/") } }
+            path.startsWith("$internalRoot/") -> { limitPath = internalRoot; navigate(path) }
+            else -> { limitPath = path; navigate(path) }
+        }
+    }
+
     private fun chooseStorage() {
         val names = mutableListOf(getString(R.string.internal_storage))
         val paths = mutableListOf(internalRoot)
@@ -666,7 +685,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         val sel = adapter.selectionMode
         menu.findItem(R.id.action_select_all).isVisible = sel
         menu.findItem(R.id.action_done).isVisible = sel
-        listOf(R.id.action_select, R.id.action_up, R.id.action_storage).forEach { menu.findItem(it).isVisible = !sel }
+        listOf(R.id.action_select, R.id.action_up).forEach { menu.findItem(it).isVisible = !sel }
+        menu.findItem(R.id.action_storage).isVisible = false // storage lives in the sidebar now
         menu.findItem(R.id.action_view).setTitle(if (prefs.viewMode == 0) R.string.view_list else R.string.view_icons)
         menu.findItem(R.id.action_root).isVisible = RootShell.deviceRooted && !sel  // hidden on non-rooted devices
         menu.findItem(R.id.action_root).isChecked = main.rootActive
@@ -680,7 +700,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             R.id.action_select_all -> { adapter.selectAll(); updateSelectionUi() }
             R.id.action_done -> exitSelect()
             R.id.action_view -> { prefs.viewMode = if (prefs.viewMode == 0) 1 else 0; setupList(); requireActivity().invalidateOptionsMenu() }
-            R.id.action_storage -> chooseStorage()
+            R.id.action_storage -> main.openDrawer()
             R.id.action_root -> main.setRootMode(!main.rootActive) { ok ->
                 if (ok) { limitPath = "/" } else { limitPath = internalRoot; currentPath = internalRoot }
                 requireActivity().invalidateOptionsMenu(); refresh()

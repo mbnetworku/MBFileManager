@@ -24,6 +24,9 @@ class Prefs(context: Context) {
     var transparency: Int
         get() = sp.getInt("transparency", 15)
         set(v) = sp.edit().putInt("transparency", v).apply()
+    var liquidGlass: Boolean
+        get() = sp.getBoolean("liquid", false)
+        set(v) = sp.edit().putBoolean("liquid", v).apply()
     var showSystemApps: Boolean
         get() = sp.getBoolean("sysapps", false)
         set(v) = sp.edit().putBoolean("sysapps", v).apply()
