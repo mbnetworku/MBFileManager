@@ -237,4 +237,5 @@
     <string name="about_notices_title">Open-source components</string>
     <string name="about_notices">• libaums (USB drives): Apache License 2.0\n• AndroidX and Material Components: Apache License 2.0\n• Kotlin and kotlinx.coroutines: Apache License 2.0</string>
     <string name="about_trademarks">Names such as Apple, iOS, Windows, Android and other trademarks belong to their owners. This app is not affiliated with or endorsed by them.</string>
+    <string name="animations">Animations</string>
 </resources>

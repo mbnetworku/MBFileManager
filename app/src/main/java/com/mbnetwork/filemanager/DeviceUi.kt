@@ -144,6 +144,16 @@ object DeviceUi {
         }
     }
 
+    // ---- screen transitions for the extra screens (player, notepad, Office, USB tools)
+    @Suppress("DEPRECATION")
+    fun enterRise(act: Activity) { if (Prefs(act).animations) act.overridePendingTransition(R.anim.slide_up, R.anim.stay) }
+    @Suppress("DEPRECATION")
+    fun exitDrop(act: Activity) { if (Prefs(act).animations) act.overridePendingTransition(R.anim.stay, R.anim.slide_down) }
+    @Suppress("DEPRECATION")
+    fun enterSlide(act: Activity) { if (Prefs(act).animations) act.overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out) }
+    @Suppress("DEPRECATION")
+    fun exitSlide(act: Activity) { if (Prefs(act).animations) act.overridePendingTransition(R.anim.fade_in, R.anim.slide_out_right) }
+
     /** Android 12+: real blur of a view (used behind the sidebar and sheets). */
     fun blur(v: View, radius: Float) {
         if (android.os.Build.VERSION.SDK_INT >= 31) {
@@ -193,6 +203,11 @@ object DeviceUi {
             setPadding(0, (8 * d).toInt(), 0, 0)
         }
         box.addView(musicSw)
+        val animSw = com.google.android.material.materialswitch.MaterialSwitch(activity).apply {
+            setText(R.string.animations); isChecked = prefs.animations; textSize = 16f
+            setPadding(0, (8 * d).toInt(), 0, 0)
+        }
+        box.addView(animSw)
         box.addView(android.widget.TextView(activity).apply { setText(R.string.transparency_hint); alpha = 0.7f })
         MaterialAlertDialogBuilder(activity)
             .setTitle(R.string.appearance)
@@ -202,6 +217,7 @@ object DeviceUi {
                 val newT = slider.value.toInt()
                 val changed = newTheme != prefs.theme || newT != prefs.transparency || liquidSw.isChecked != prefs.liquidGlass
                 prefs.theme = newTheme; prefs.transparency = newT; prefs.liquidGlass = liquidSw.isChecked
+                prefs.animations = animSw.isChecked
                 if (musicSw.isChecked != prefs.musicNotification) { prefs.musicNotification = musicSw.isChecked; MusicPlayer.applyNotificationSetting() }
                 applyTheme(activity, prefs)
                 if (changed) activity.recreate()

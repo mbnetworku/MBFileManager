@@ -86,6 +86,18 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
         })
     }
 
+    /** Rows glide in one after another when the sidebar opens. */
+    fun animateIn() {
+        if (!Prefs(act).animations) return
+        for (i in 0 until box.childCount) {
+            val v = box.getChildAt(i)
+            v.alpha = 0f
+            v.translationX = -28 * d
+            v.animate().alpha(1f).translationX(0f).setStartDelay(i * 18L).setDuration(260)
+                .setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        }
+    }
+
     private fun section(title: Int) {
         box.addView(TextView(act).apply {
             setText(title); textSize = 12f; isAllCaps = true; alpha = 0.6f

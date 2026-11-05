@@ -34,6 +34,8 @@ class FileAdapter(
     var glassColor: Int? = null
     /** Icon view: number of columns (thumbnail size follows the column width). */
     var columns = 3
+    /** Selection badges pop in. */
+    var animateChecks = true
 
     fun toggle(f: FileItem) {
         if (!selected.remove(f.path)) selected += f.path
@@ -91,6 +93,15 @@ class FileAdapter(
         h.check?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(
             if (isSel) ContextCompat.getColor(ctx, R.color.icon_folder) else 0xFFB0B0B0.toInt())) }
         h.itemView.isActivated = isSel
+        h.check?.let { c ->
+            val was = c.tag as? Boolean
+            if (animateChecks && selectionMode && isSel && was != true) {
+                c.scaleX = 0.4f; c.scaleY = 0.4f
+                c.animate().scaleX(1f).scaleY(1f).setDuration(260)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(3f)).start()
+            } else { c.scaleX = 1f; c.scaleY = 1f }
+            c.tag = isSel
+        }
 
         val date = if (f.lastModified > 0) DateFormat.getDateFormat(ctx).format(Date(f.lastModified)) +
             (if (mode == LIST) " " + DateFormat.getTimeFormat(ctx).format(Date(f.lastModified)) else "") else ""

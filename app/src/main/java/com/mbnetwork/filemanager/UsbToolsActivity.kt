@@ -65,6 +65,7 @@ class UsbToolsActivity : AppCompatActivity() {
         DeviceUi.applyTheme(this, Prefs(this))
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_office)
+        DeviceUi.enterSlide(this)
         setSupportActionBar(findViewById<MaterialToolbar>(R.id.toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setTitle(R.string.usb_tools)
@@ -450,6 +451,8 @@ class UsbToolsActivity : AppCompatActivity() {
                 .setPositiveButton(R.string.ok, null).show()
         }
     }
+
+    override fun finish() { super.finish(); DeviceUi.exitSlide(this) }
 
     companion object { const val ACTION_PERM = "com.mbnetwork.filemanager.USB_PERMISSION" }
 }

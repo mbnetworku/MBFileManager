@@ -62,6 +62,7 @@ class OfficeActivity : AppCompatActivity() {
         DeviceUi.applyTheme(this, Prefs(this))
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_office)
+        DeviceUi.enterSlide(this)
         file = File(intent.getStringExtra(EXTRA_PATH) ?: run { finish(); return })
         kind = OfficeDoc.kind(file.name) ?: "old"
         setSupportActionBar(findViewById<MaterialToolbar>(R.id.toolbar))
@@ -448,6 +449,8 @@ class OfficeActivity : AppCompatActivity() {
         }
         return true
     }
+
+    override fun finish() { super.finish(); DeviceUi.exitSlide(this) }
 
     companion object { const val EXTRA_PATH = "path" }
 }

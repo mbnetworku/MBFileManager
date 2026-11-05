@@ -91,6 +91,7 @@ class PlayerActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar) { dragging = false; MusicPlayer.seek(s.progress) }
         })
 
+        DeviceUi.enterRise(this)
         MusicPlayer.appContext = applicationContext
         // Android 13+: ask once for the notification permission (only if the notification is enabled)
         if (Build.VERSION.SDK_INT >= 33 && Prefs(this).musicNotification &&
@@ -125,6 +126,13 @@ class PlayerActivity : AppCompatActivity() {
         shuffle.alpha = if (MusicPlayer.shuffle) 1f else 0.4f
         repeat.alpha = if (MusicPlayer.repeatOne) 1f else 0.4f
         showCover(f)
+        // like Apple Music: the cover grows while playing and shrinks when paused
+        (cover.parent as? View)?.let { frame ->
+            val target = if (MusicPlayer.isPlaying) 1f else 0.86f
+            if (Prefs(this).animations) frame.animate().scaleX(target).scaleY(target).setDuration(320)
+                .setInterpolator(android.view.animation.OvershootInterpolator(1.3f)).start()
+            else { frame.scaleX = target; frame.scaleY = target }
+        }
         queueAdapter?.notifyDataSetChanged()
         queueTitle?.text = getString(R.string.playing_queue_n, MusicPlayer.queue.size)
     }
@@ -257,6 +265,8 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun fmt(ms: Int): String { val s = ms / 1000; return "%d:%02d".format(s / 60, s % 60) }
+
+    override fun finish() { super.finish(); DeviceUi.exitDrop(this) }
 
     companion object { const val EXTRA_PATH = "path" }
 }

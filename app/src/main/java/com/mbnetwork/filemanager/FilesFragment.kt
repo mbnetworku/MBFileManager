@@ -107,6 +107,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         crumbScroll = view.findViewById(R.id.crumbScroll)
 
         recycler = view.findViewById(R.id.list)
+        recycler.layoutAnimation = android.view.animation.AnimationUtils.loadLayoutAnimation(requireContext(), R.anim.layout_anim)
         selectBar = view.findViewById(R.id.selectBar)
         setupList()
         // phones: the list scrolls UNDER the glass top bar (start it just below the bar)
@@ -188,6 +189,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             viewLifecycleOwner.lifecycleScope.launch {
                 val list = withContext(Dispatchers.IO) { runCatching { loader(app) }.getOrDefault(emptyList()) }
                 swipe.isRefreshing = false
+                animateList("v|" + virtualTitle)
                 adapter.items = list
                 if (list.isEmpty()) showEmpty(getString(R.string.empty_folder), false) else emptyView.visibility = View.GONE
             }
@@ -210,6 +212,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             val result = withContext(Dispatchers.IO) { runCatching { sort(o.list(path)) } }
             swipe.isRefreshing = false
             result.onSuccess {
+                animateList("p|" + path)
                 adapter.items = it
                 if (it.isEmpty()) showEmpty(getString(R.string.empty_folder), false) else emptyView.visibility = View.GONE
             }.onFailure {
@@ -258,6 +261,30 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         val pushed = parentFragmentManager.backStackEntryCount > 0
         val back = !adapter.selectionMode && (if (virtualTitle != null) !pinned else (pushed || currentPath != limitPath))
         main.setNavMode(back) { requireActivity().onBackPressedDispatcher.onBackPressed() }
+    }
+
+    private var lastAnimKey: String? = null
+
+    /** Items rise in one by one when a new folder / list is shown. */
+    private fun animateList(key: String) {
+        if (key == lastAnimKey || !prefs.animations) return
+        lastAnimKey = key
+        recycler.scheduleLayoutAnimation()
+    }
+
+    private fun showSelectBar(show: Boolean) {
+        val dist = 70 * resources.displayMetrics.density
+        selectBar.animate().cancel()
+        if (!prefs.animations) { selectBar.visibility = if (show) View.VISIBLE else View.GONE; return }
+        if (show) {
+            if (selectBar.visibility != View.VISIBLE) { selectBar.alpha = 0f; selectBar.translationY = dist; selectBar.visibility = View.VISIBLE }
+            selectBar.animate().alpha(1f).translationY(0f).setDuration(240)
+                .setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        } else if (selectBar.visibility == View.VISIBLE) {
+            selectBar.animate().alpha(0f).translationY(dist).setDuration(180).withEndAction {
+                selectBar.visibility = View.GONE; selectBar.translationY = 0f; selectBar.alpha = 1f
+            }.start()
+        }
     }
 
     private fun updateHeader() {
@@ -349,6 +376,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         }
         recycler.layoutManager = if (cols > 1) GridLayoutManager(ctx, cols) else LinearLayoutManager(ctx)
         adapter.columns = cols
+        adapter.animateChecks = prefs.animations
         recycler.adapter = adapter
         if (mode == FileAdapter.ICONS) enablePinch()
     }
@@ -408,7 +436,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
 
     private fun updateSelectionUi() {
         val on = adapter.selectionMode
-        selectBar.visibility = if (on) View.VISIBLE else View.GONE
+        showSelectBar(on)
         fab.visibility = if (on || virtualTitle != null) View.GONE else View.VISIBLE
         main.setTabBarVisible(!on)                     // the batch toolbar replaces the tab bar
         updateNav()

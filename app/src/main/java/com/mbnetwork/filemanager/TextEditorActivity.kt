@@ -33,6 +33,7 @@ class TextEditorActivity : AppCompatActivity() {
         DeviceUi.applyTheme(this, Prefs(this))
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_text)
+        DeviceUi.enterSlide(this)
         file = File(intent.getStringExtra(EXTRA_PATH) ?: run { finish(); return })
         root = intent.getBooleanExtra(EXTRA_ROOT, false)
         editing = intent.getBooleanExtra(EXTRA_EDIT, false)
@@ -144,6 +145,8 @@ class TextEditorActivity : AppCompatActivity() {
         }
         return true
     }
+
+    override fun finish() { super.finish(); DeviceUi.exitSlide(this) }
 
     companion object {
         const val EXTRA_PATH = "path"

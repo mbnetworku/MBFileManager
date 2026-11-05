@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
                 if (DeviceUi.liquid(this@MainActivity)) DeviceUi.blur(mainContent, 24f * offset)
             }
             override fun onDrawerStateChanged(state: Int) {
-                if (state == DrawerLayout.STATE_SETTLING && !drawer.isDrawerOpen(GravityCompat.START)) sidebar.build()
+                if (state == DrawerLayout.STATE_SETTLING && !drawer.isDrawerOpen(GravityCompat.START)) { sidebar.build(); sidebar.animateIn() }
             }
             override fun onDrawerOpened(v: View) {
                 drawerBack.isEnabled = true
@@ -409,6 +409,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun show(f: Fragment, push: Boolean = false) {
         val t = supportFragmentManager.beginTransaction()
+        if (prefs.animations) {
+            if (push) t.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+            else t.setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
+        }
         t.replace(R.id.container, f)
         if (push) t.addToBackStack(null)
         t.commit()

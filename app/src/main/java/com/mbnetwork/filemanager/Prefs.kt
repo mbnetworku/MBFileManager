@@ -35,6 +35,10 @@ class Prefs(context: Context) {
     var musicNotification: Boolean
         get() = sp.getBoolean("music_notif", true)
         set(v) = sp.edit().putBoolean("music_notif", v).apply()
+    /** Screen / list / bar animations. */
+    var animations: Boolean
+        get() = sp.getBoolean("anim", true)
+        set(v) = sp.edit().putBoolean("anim", v).apply()
     var showSystemApps: Boolean
         get() = sp.getBoolean("sysapps", false)
         set(v) = sp.edit().putBoolean("sysapps", v).apply()

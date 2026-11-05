@@ -45,7 +45,10 @@ class HomeFragment : Fragment(), Refreshable {
         private val open = hashMapOf("loc" to true, "fav" to true, "tag" to true)
     }
 
+    private var playIntro = true
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, s: Bundle?): View {
+        playIntro = true
         box = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(px(16), main.topInset + px(2), px(16), main.bottomInset + px(24))
@@ -84,6 +87,17 @@ class HomeFragment : Fragment(), Refreshable {
         section("loc", R.string.locations) { locations(it) }
         section("fav", R.string.favorites) { favorites(it) }
         section("tag", R.string.tags) { tags(it) }
+
+        if (playIntro && Prefs(requireContext()).animations) {
+            playIntro = false
+            for (i in 0 until box.childCount) {
+                val v = box.getChildAt(i)
+                v.alpha = 0f
+                v.translationY = 28 * d
+                v.animate().alpha(1f).translationY(0f).setStartDelay(i * 45L).setDuration(300)
+                    .setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+            }
+        }
     }
 
     // ------------------------------------------------------------------ search + chips
@@ -162,6 +176,7 @@ class HomeFragment : Fragment(), Refreshable {
             })
             addView(chevron)
             setOnClickListener {
+                if (Prefs(requireContext()).animations) android.transition.TransitionManager.beginDelayedTransition(box)
                 val nowOpen = open[key] != true
                 open[key] = nowOpen
                 group.visibility = if (nowOpen) View.VISIBLE else View.GONE

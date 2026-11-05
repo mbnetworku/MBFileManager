@@ -42,6 +42,9 @@
 - **Colour tags:** Red / Orange / Blue / Green (long-press a file → Tags)
 - **Windows-style file icons:** yellow folders and white pages with coloured type labels (PDF, DOCX, XLSX, MP3 …)
 
+### ✨ Animations
+Smooth slide / fade between screens, list items that rise in, a selection toolbar that slides up, pop-in check badges, a sidebar that glides open, and an album cover that grows and shrinks with play / pause. Turn them off in **☰ → Appearance → Animations** (useful on weak car units).
+
 ### 🏠 Browse screen
 - Search all files by name
 - Storage cards with usage bars
