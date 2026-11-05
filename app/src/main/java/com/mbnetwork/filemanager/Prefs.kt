@@ -31,6 +31,10 @@ class Prefs(context: Context) {
     var iconColumns: Int
         get() = sp.getInt("iconCols", 0)
         set(v) = sp.edit().putInt("iconCols", v).apply()
+    /** Show the "now playing" notification while music plays. */
+    var musicNotification: Boolean
+        get() = sp.getBoolean("music_notif", true)
+        set(v) = sp.edit().putBoolean("music_notif", v).apply()
     var showSystemApps: Boolean
         get() = sp.getBoolean("sysapps", false)
         set(v) = sp.edit().putBoolean("sysapps", v).apply()

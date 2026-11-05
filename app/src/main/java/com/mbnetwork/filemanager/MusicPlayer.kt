@@ -1,10 +1,15 @@
 package com.mbnetwork.filemanager
 
+import android.content.Context
+import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.PowerManager
+import androidx.core.content.ContextCompat
 import java.io.File
+import java.util.concurrent.CopyOnWriteArrayList
 
-/** Simple app-wide music player. Keeps playing while you browse files. */
+/** Simple app-wide music player. Keeps playing while you browse files (and, with the notification, in the background). */
 object MusicPlayer {
     val AUDIO_EXT = setOf("mp3", "wav", "ogg", "flac", "aac", "m4a", "opus", "amr", "wma", "mid", "midi")
     fun isAudio(name: String) = name.substringAfterLast('.', "").lowercase() in AUDIO_EXT
@@ -14,8 +19,18 @@ object MusicPlayer {
     var shuffle = false
     var repeatOne = false
     private var player: MediaPlayer? = null
-    var listener: (() -> Unit)? = null
 
+    /** The player screen listens here. */
+    var listener: (() -> Unit)? = null
+    private val observers = CopyOnWriteArrayList<() -> Unit>()
+    fun addObserver(o: () -> Unit) { observers.addIfAbsent(o) }
+    fun removeObserver(o: () -> Unit) { observers.remove(o) }
+    private fun changed() { listener?.invoke(); observers.forEach { it() } }
+
+    /** Needed to start / stop the notification service. */
+    var appContext: Context? = null
+
+    val active get() = player != null
     val current get() = queue.getOrNull(index)
     val isPlaying get() = try { player?.isPlaying == true } catch (e: Exception) { false }
     val position get() = try { player?.currentPosition ?: 0 } catch (e: Exception) { 0 }
@@ -35,21 +50,23 @@ object MusicPlayer {
         player?.release()
         player = MediaPlayer().apply {
             @Suppress("DEPRECATION") setAudioStreamType(AudioManager.STREAM_MUSIC)
+            appContext?.let { setWakeMode(it, PowerManager.PARTIAL_WAKE_LOCK) }   // keep playing with the screen off
             setOnCompletionListener { if (repeatOne) start() else next() }
-            setOnErrorListener { _, _, _ -> listener?.invoke(); true }
+            setOnErrorListener { _, _, _ -> changed(); true }
             try {
                 setDataSource(f.absolutePath)
                 prepare()
                 start()
             } catch (e: Exception) { /* unsupported file */ }
         }
-        listener?.invoke()
+        refreshNotification()
+        changed()
     }
 
     fun toggle() {
         val p = player ?: return start()
         if (p.isPlaying) p.pause() else p.start()
-        listener?.invoke()
+        changed()
     }
 
     fun next() {
@@ -69,6 +86,19 @@ object MusicPlayer {
 
     fun stop() {
         player?.release(); player = null
-        listener?.invoke()
+        changed()
+    }
+
+    /** Shows / updates the notification (if the user allows it in the settings). */
+    fun refreshNotification() {
+        val c = appContext ?: return
+        if (!active || !Prefs(c).musicNotification) return
+        try { ContextCompat.startForegroundService(c, Intent(c, MusicService::class.java)) } catch (e: Exception) { }
+    }
+
+    /** Called when the user switches the setting. */
+    fun applyNotificationSetting() {
+        val c = appContext ?: return
+        if (Prefs(c).musicNotification) refreshNotification() else c.stopService(Intent(c, MusicService::class.java))
     }
 }

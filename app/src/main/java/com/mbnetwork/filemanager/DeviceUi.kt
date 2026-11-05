@@ -188,6 +188,11 @@ object DeviceUi {
             setPadding(0, (8 * d).toInt(), 0, 0)
         }
         box.addView(liquidSw)
+        val musicSw = com.google.android.material.materialswitch.MaterialSwitch(activity).apply {
+            setText(R.string.music_notification); isChecked = prefs.musicNotification; textSize = 16f
+            setPadding(0, (8 * d).toInt(), 0, 0)
+        }
+        box.addView(musicSw)
         box.addView(android.widget.TextView(activity).apply { setText(R.string.transparency_hint); alpha = 0.7f })
         MaterialAlertDialogBuilder(activity)
             .setTitle(R.string.appearance)
@@ -197,6 +202,7 @@ object DeviceUi {
                 val newT = slider.value.toInt()
                 val changed = newTheme != prefs.theme || newT != prefs.transparency || liquidSw.isChecked != prefs.liquidGlass
                 prefs.theme = newTheme; prefs.transparency = newT; prefs.liquidGlass = liquidSw.isChecked
+                if (musicSw.isChecked != prefs.musicNotification) { prefs.musicNotification = musicSw.isChecked; MusicPlayer.applyNotificationSetting() }
                 applyTheme(activity, prefs)
                 if (changed) activity.recreate()
             }

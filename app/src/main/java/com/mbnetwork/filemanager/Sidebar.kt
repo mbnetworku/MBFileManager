@@ -73,6 +73,10 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
 
         section(R.string.appearance)
         row(act.getString(R.string.appearance), R.drawable.ic_tune, R.color.grad_mid) { act.closeDrawer(); DeviceUi.chooseTheme(act, act.prefs) }
+        switchRow(act.getString(R.string.music_notification), R.drawable.ic_audio, R.color.t_audio, act.prefs.musicNotification) { on ->
+            act.prefs.musicNotification = on
+            MusicPlayer.applyNotificationSetting()
+        }
         row(act.getString(R.string.check_updates), R.drawable.ic_open, R.color.accent) { act.closeDrawer(); act.checkUpdates() }
     }
 
@@ -102,6 +106,20 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
             .apply { setMargins(px(8), px(1), px(8), px(1)) }
         setOnClickListener { click() }
         DeviceUi.liquidTouch(this)
+    }
+
+    /** A sidebar row with an on / off switch. */
+    private fun switchRow(title: String, ic: Int, color: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
+        val sw = com.google.android.material.materialswitch.MaterialSwitch(act).apply { isChecked = checked }
+        box.addView(baseRow { sw.toggle() }.apply {
+            addView(iconTile(ic, color))
+            addView(TextView(act).apply {
+                text = title; textSize = 15f; setPadding(px(14), 0, px(8), 0)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            addView(sw)
+        })
+        sw.setOnCheckedChangeListener { _, v -> onChange(v) }
     }
 
     private fun row(title: String, ic: Int, color: Int, click: () -> Unit) {

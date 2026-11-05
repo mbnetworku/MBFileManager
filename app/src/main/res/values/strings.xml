@@ -225,4 +225,6 @@
     <string name="recently_deleted">Recently Deleted</string>
     <string name="select_items">Select Items</string>
     <string name="deselect_all">Deselect All</string>
+    <string name="music_notification">Music notification</string>
+    <string name="music_notification_hint">Shows the playing song in the notification bar with Previous / Play / Next / Stop. Swipe it away to stop the music.</string>
 </resources>

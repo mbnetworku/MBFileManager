@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         prefs = Prefs(this)
+        MusicPlayer.appContext = applicationContext
         DeviceUi.applyTheme(this, prefs) // White / Black / System, chosen in the menu
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)

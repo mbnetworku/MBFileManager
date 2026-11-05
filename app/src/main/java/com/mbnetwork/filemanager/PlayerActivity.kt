@@ -1,5 +1,6 @@
 package com.mbnetwork.filemanager
 
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -25,6 +26,10 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var cover: android.widget.ImageView
     private var shownCover: String? = null
     private var dragging = false
+
+    private val notifPermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+        MusicPlayer.refreshNotification()
+    }
 
     private val ticker = object : Runnable {
         override fun run() {
@@ -65,6 +70,12 @@ class PlayerActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar) { dragging = false; MusicPlayer.seek(s.progress) }
         })
 
+        MusicPlayer.appContext = applicationContext
+        // Android 13+: ask once for the notification permission (only if the notification is enabled)
+        if (Build.VERSION.SDK_INT >= 33 && Prefs(this).musicNotification &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            notifPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
         intent.getStringExtra(EXTRA_PATH)?.let { if (savedInstanceState == null) MusicPlayer.playFolder(File(it)) }
         play.requestFocus() // TV remote: start on Play
     }
