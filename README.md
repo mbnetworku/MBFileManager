@@ -1,50 +1,99 @@
-# MB File Manager (Android 5.0+)
+<div align="center">
 
-A file manager and app manager for Android **5.0 Lollipop (API 21) and newer**.
+<img src="docs/icon.svg" width="96" alt="MB File Manager icon">
 
-## Features
+# MB File Manager
 
-### Smart permission check
-On launch, the app checks whether the **Android version needs a permission**:
+**A file explorer and app manager for Android 5.0 and newer.**
 
-| Android version | What happens |
+[![Download APK](https://img.shields.io/badge/Download-APK-2ea44f?style=for-the-badge&logo=android&logoColor=white)](https://github.com/mbnetworku/MBFileManager/releases/latest/download/MBFileManager.apk)
+
+[![Latest release](https://img.shields.io/github/v/release/mbnetworku/MBFileManager?style=flat-square)](https://github.com/mbnetworku/MBFileManager/releases/latest)
+![Android 5.0+](https://img.shields.io/badge/Android-5.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?style=flat-square&logo=kotlin&logoColor=white)
+[![Build](https://img.shields.io/github/actions/workflow/status/mbnetworku/MBFileManager/build.yml?style=flat-square&label=build)](https://github.com/mbnetworku/MBFileManager/actions)
+
+</div>
+
+---
+
+## 📥 Download
+
+| | Link |
 |---|---|
-| 5.0 – 5.1 (API 21–22) | Permissions are granted at install time. **No popup**, it just works. |
-| 6.0 – 10 (API 23–29) | If storage permission is missing, a popup explains it and the system "Allow" dialog appears. |
-| 11+ (API 30+) | If "All files access" is off, a popup explains it and opens the settings switch. |
+| **Latest APK (always newest)** | **[MBFileManager.apk](https://github.com/mbnetworku/MBFileManager/releases/latest/download/MBFileManager.apk)** |
+| Version 1.1 | [MBFileManager-v1.1.apk](https://github.com/mbnetworku/MBFileManager/releases/download/v1.1/MBFileManager-v1.1.apk) |
+| All versions | [Releases page](https://github.com/mbnetworku/MBFileManager/releases) |
 
-If the permission is already granted, nothing is shown.
+### How to install
+1. Open the **Download APK** link on your phone.
+2. Tap the downloaded file.
+3. If asked, allow **Install unknown apps** for your browser, then tap **Install**.
 
-### Root detection
-At startup the app checks whether the device is **actually rooted** (an `su` binary exists).
-- **Not rooted:** all root features are hidden: no Root mode, no "Root (/)" storage, no root app actions.
-- **Rooted:** root features appear. They are used only after you allow access in your root manager.
+---
 
-### Files tab
-- Browse internal storage, SD cards and USB drives
-- Open, open with, share, rename, copy, cut/move, paste, delete, details
-- **Install apps:** tap any `.apk` file. On Android 8+ the app first checks the "Install unknown apps"
-  permission and only asks if it's missing. Rooted devices also get *Install silently (root)*.
-- New folder (＋ button) / new file, show hidden files, sort by name/size/date
-- **Root mode** (menu → Root mode, or Storage → Root): browse `/`, `/system`, `/data` and other
-  protected folders through `su`. Protected files can still be opened (a temporary copy is made).
-  A red **ROOT MODE** banner shows when it's active.
+## ✨ Features
 
-### Apps tab
-- Lists installed apps, with search and a **Show system apps** toggle
-- **Install APK…** (menu) finds every APK on your storage and installs the one you pick
-- **Uninstall** normal apps (standard Android uninstall dialog, no root needed)
-- **Uninstall system apps** (rooted devices only): `pm uninstall -k --user 0`. Removed system apps stay in the
-  list as *REMOVED* and can be **restored** later.
-- Disable/enable apps (root), open the app, open App info, save the APK to `Download/`
+### 📁 File Explorer
+- Browse **internal storage**, **SD card** and **USB drives**
+- Open, share, rename, copy, move, paste, delete, details
+- Create folders and files · show hidden files · sort by name / size / date
+- **Tap an `.apk` to install it**
 
-## Build
+### 📦 App Manager
+- List all apps, with search and a **Show system apps** switch
+- **Install** APKs: *Install APK…* finds every APK on your storage
+- **Uninstall** any normal app
+- Open an app, open its App info, save its APK to `Download/`
+
+### 🔓 Root (rooted devices only)
+The app **checks whether your device is rooted**. On a normal phone, root options are hidden.
+
+| | Not rooted | Rooted |
+|---|:---:|:---:|
+| Browse `/`, `/system`, `/data` | ❌ hidden | ✅ |
+| Uninstall / restore system apps | ❌ hidden | ✅ |
+| Disable / enable apps | ❌ hidden | ✅ |
+| Silent APK install | ❌ hidden | ✅ |
+
+> ⚠️ Removing important system apps can make your phone unstable. They're removed only for your user and can be **restored** from the app list.
+
+---
+
+## 🔐 Permissions: asked only when needed
+
+The app checks your **Android version** and only asks when a permission is actually missing.
+
+| Android version | Storage access | Installing apps |
+|---|---|---|
+| **5.0 – 5.1** | Granted at install, **no popup** | No popup |
+| **6 – 7** | Popup only if missing | No popup |
+| **8 – 10** | Popup only if missing | "Install unknown apps," only if off |
+| **11 and newer** | "All files access" switch, only if off | "Install unknown apps," only if off |
+
+---
+
+## 🛠️ Build it yourself
+
 ```bash
-./gradlew assembleDebug
+./gradlew assembleRelease
 ```
-The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
-Every push also builds the APKs on GitHub Actions (**Actions → Build APK → Artifacts**).
 
-## Install
-Copy the APK to the phone, open it and allow "Install unknown apps" when asked.
-Root features need a rooted device (Magisk, SuperSU, KernelSU…). Grant access when the root manager asks.
+Output: `app/build/outputs/apk/release/app-release.apk`
+
+Every push builds the APK on **GitHub Actions** and publishes it on the **[Releases page](https://github.com/mbnetworku/MBFileManager/releases)**.
+
+| | |
+|---|---|
+| Min SDK | 21 (Android 5.0) |
+| Target SDK | 34 |
+| Language | Kotlin |
+| UI | Material Design 3 |
+
+<div align="center">
+
+---
+
+Made by **MB Network**
+
+</div>

@@ -23,6 +23,7 @@ jobs:
           VER=$(grep versionName app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
           echo "VER=$VER" >> $GITHUB_ENV
           cp app/build/outputs/apk/release/app-release.apk MBFileManager-v$VER.apk
+          cp app/build/outputs/apk/release/app-release.apk MBFileManager.apk
       - uses: actions/upload-artifact@v4
         with:
           name: MBFileManager-apk
@@ -32,7 +33,9 @@ jobs:
         with:
           tag_name: v${{ env.VER }}
           name: MB File Manager v${{ env.VER }}
-          files: MBFileManager-v*.apk
+          files: |
+            MBFileManager-v*.apk
+            MBFileManager.apk
           make_latest: true
           body: |
             MB File Manager for Android 5.0+.
