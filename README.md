@@ -70,7 +70,7 @@ Smooth slide / fade between screens, list items that rise in, a selection toolba
 - 🖼️ **Photo viewer**: swipe through the folder, pinch / double-tap zoom, share, delete
 - 🎨 **Photo editor**: crop (1:1, 4:3, 16:9…), rotate, flip, 9 filters, brightness / contrast / saturation, save as a copy or replace
 - 🎬 **Video player** (±10 s, seek bar) and **video editor**: trim, mute, rotate, saved as a new MP4 without losing quality
-- 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek), album art, an **animated equalizer**, a **playing queue** (tap to play, remove or delete songs) and a notification with controls
+- 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek), album art, an **equalizer that follows the real sound** (microphone permission, optional), a **playing queue** (tap to play, remove or delete songs) and a notification with controls
 - 📝 **Built-in notepad**: text files open directly. Read, edit and save. Create new `.txt` files with ＋
 - 🎮 **OBB folder** shortcut (Storage → OBB folder) for game data
 

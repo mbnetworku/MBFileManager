@@ -279,4 +279,6 @@
     <string name="mute_audio">Mute audio</string>
     <string name="rotate_n">Rotate: %1$d°</string>
     <string name="saving">Saving…</string>
+    <string name="equalizer_real">Equalizer follows the music (microphone permission)</string>
+    <string name="photo_external">This photo format cannot be shown inside the app on this Android version (HEIC needs Android 9 or newer). Open it with another app?</string>
 </resources>

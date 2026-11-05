@@ -39,6 +39,13 @@ class Prefs(context: Context) {
     var animations: Boolean
         get() = sp.getBoolean("anim", true)
         set(v) = sp.edit().putBoolean("anim", v).apply()
+    /** Equalizer follows the real sound (needs the microphone permission). */
+    var realEqualizer: Boolean
+        get() = sp.getBoolean("real_eq", true)
+        set(v) = sp.edit().putBoolean("real_eq", v).apply()
+    var micAsked: Boolean
+        get() = sp.getBoolean("mic_asked", false)
+        set(v) = sp.edit().putBoolean("mic_asked", v).apply()
     var showSystemApps: Boolean
         get() = sp.getBoolean("sysapps", false)
         set(v) = sp.edit().putBoolean("sysapps", v).apply()

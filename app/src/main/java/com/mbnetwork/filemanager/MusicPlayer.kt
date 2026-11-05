@@ -31,6 +31,8 @@ object MusicPlayer {
     var appContext: Context? = null
 
     val active get() = player != null
+    /** Needed by the equalizer to read the loudness of this player. */
+    val audioSessionId get() = try { player?.audioSessionId ?: 0 } catch (e: Exception) { 0 }
     val current get() = queue.getOrNull(index)
     val isPlaying get() = try { player?.isPlaying == true } catch (e: Exception) { false }
     val position get() = try { player?.currentPosition ?: 0 } catch (e: Exception) { 0 }

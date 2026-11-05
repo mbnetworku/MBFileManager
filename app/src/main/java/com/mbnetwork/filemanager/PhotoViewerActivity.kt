@@ -96,11 +96,29 @@ class PhotoViewerActivity : AppCompatActivity() {
         job?.cancel()
         job = lifecycleScope.launch {
             val bm = withContext(Dispatchers.IO) { runCatching { ImageUtil.decode(f.absolutePath, 2048) }.getOrNull() }
-            if (bm == null) { Toast.makeText(this@PhotoViewerActivity, R.string.photo_failed, Toast.LENGTH_SHORT).show(); return@launch }
+            if (bm == null) { cannotShow(f); return@launch }
             zoom.alpha = 0f
             zoom.setImageBitmap(bm)
             zoom.animate().alpha(1f).setDuration(180).start()
         }
+    }
+
+    private var failedShown = false
+
+    /** The format cannot be decoded here (for example HEIC before Android 9): offer another app. */
+    private fun cannotShow(f: File) {
+        if (failedShown) { Toast.makeText(this, R.string.photo_failed, Toast.LENGTH_SHORT).show(); return }
+        failedShown = true
+        MaterialAlertDialogBuilder(this).setTitle(R.string.photo_failed).setMessage(R.string.photo_external)
+            .setPositiveButton(R.string.open_with) { _, _ ->
+                val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", f)
+                try {
+                    startActivity(Intent.createChooser(
+                        Intent(Intent.ACTION_VIEW).setDataAndType(uri, MediaTypes.mime(f.name))
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), getString(R.string.open_with)))
+                } catch (e: Exception) { Toast.makeText(this, R.string.no_app_to_open, Toast.LENGTH_SHORT).show() }
+            }
+            .setNegativeButton(R.string.cancel, null).show()
     }
 
     private fun go(dir: Int) {

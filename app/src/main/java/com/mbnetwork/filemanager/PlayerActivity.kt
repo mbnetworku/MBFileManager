@@ -47,8 +47,16 @@ class PlayerActivity : AppCompatActivity() {
     private var queueTitle: TextView? = null
     private fun px(v: Int) = (v * resources.displayMetrics.density).toInt()
 
-    private val notifPermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+    private val permissions = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()) {
         MusicPlayer.refreshNotification()
+        attachEqualizer()
+    }
+
+    /** Real equalizer only when the microphone permission is granted (it reads the loudness of our own player). */
+    private fun attachEqualizer() {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (Prefs(this).realEqualizer && granted && MusicPlayer.isPlaying) equalizer.attach(MusicPlayer.audioSessionId) else equalizer.detach()
     }
 
     private val ticker = object : Runnable {
@@ -95,11 +103,18 @@ class PlayerActivity : AppCompatActivity() {
 
         DeviceUi.enterRise(this)
         MusicPlayer.appContext = applicationContext
-        // Android 13+: ask once for the notification permission (only if the notification is enabled)
-        if (Build.VERSION.SDK_INT >= 33 && Prefs(this).musicNotification &&
-            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            notifPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        // ask once (one dialog): notifications (Android 13+) and the microphone for the real equalizer
+        val prefs = Prefs(this)
+        val need = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= 33 && prefs.musicNotification &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+            need += android.Manifest.permission.POST_NOTIFICATIONS
+        if (Build.VERSION.SDK_INT >= 23 && prefs.realEqualizer && !prefs.micAsked &&
+            checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            need += android.Manifest.permission.RECORD_AUDIO
+            prefs.micAsked = true
         }
+        if (need.isNotEmpty()) permissions.launch(need.toTypedArray())
         intent.getStringExtra(EXTRA_PATH)?.let { if (savedInstanceState == null) MusicPlayer.playFolder(File(it)) }
         play.requestFocus() // TV remote: start on Play
     }
@@ -116,6 +131,7 @@ class PlayerActivity : AppCompatActivity() {
         super.onStop()
         MusicPlayer.listener = null
         equalizer.stop()
+        equalizer.detach()
         handler.removeCallbacks(ticker)
     }
 
@@ -138,6 +154,7 @@ class PlayerActivity : AppCompatActivity() {
             else { frame.scaleX = target; frame.scaleY = target }
         }
         equalizer.playing = MusicPlayer.isPlaying
+        attachEqualizer()
         queueAdapter?.notifyDataSetChanged()
         queueTitle?.text = getString(R.string.playing_queue_n, MusicPlayer.queue.size)
     }

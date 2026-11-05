@@ -116,6 +116,8 @@ player cover scale, equalizer bars. All can be disabled with **Appearance → An
 
 * Android 8+: `REQUEST_INSTALL_PACKAGES` ("Install unknown apps") is checked only when installing an APK.
 * Android 13+: `POST_NOTIFICATIONS` is requested once when music starts.
+* `RECORD_AUDIO` is requested once (same dialog) only for the **real equalizer**: `android.media.audiofx.Visualizer` needs it to read
+  the loudness of the app's own player. Nothing is recorded. If denied, or switched off in Appearance, the equalizer is an animation.
 * **Root features are shown only if an `su` binary exists** (`RootShell.deviceRooted`). `FileOps(root = true)` runs shell commands.
 * `StorageVolumes.list` combines `StorageManager`, app dirs, `/proc/mounts` and a `/storage` scan to find USB / SD volumes;
   `MainActivity` also listens to media / USB broadcasts for live "USB drive connected" alerts.
@@ -182,4 +184,5 @@ rename label, quick-format as FAT32 (`FatFormatter`, MBR; wipes GPT) and merge p
 * NTFS / exFAT drives can only be mounted with root (otherwise format as FAT32).
 * FAT32 files are limited to 4 GB.
 * Live blur needs a device that can render the tiny snapshot in real time; weak devices use plain frosted glass.
+* HEIC photos only decode inside the app on Android 9+; on older versions the viewer offers "Open with" another app.
 * Android 11+ blocks `Android/data` and `Android/obb` for normal apps; root mode opens them.
