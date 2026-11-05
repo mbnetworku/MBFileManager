@@ -104,7 +104,7 @@ class FileAdapter(
         val date = if (f.lastModified > 0) DateFormat.getDateFormat(ctx).format(Date(f.lastModified)) +
             (if (mode == LIST) " " + DateFormat.getTimeFormat(ctx).format(Date(f.lastModified)) else "") else ""
         val size = if (f.isDir) "" else Formatter.formatShortFileSize(ctx, f.size)
-        h.info.text = if (mode == ICONS) (if (columns >= 5) size.ifEmpty { date } else listOf(date, size).filter { it.isNotEmpty() }.joinToString("\n"))
+        h.info.text = if (mode == ICONS) (if (columns >= 6) size.ifEmpty { date } else listOf(date, size).filter { it.isNotEmpty() }.joinToString("\n"))
             else listOf(size, date).filter { it.isNotEmpty() }.joinToString("  •  ")
         h.itemView.setOnClickListener { onClick(f) }
         h.itemView.setOnLongClickListener { onLongClick(f, it); true }
