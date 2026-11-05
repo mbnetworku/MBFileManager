@@ -92,7 +92,14 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         }
         swipe.setOnRefreshListener { refresh() }
         grantButton.setOnClickListener { PermissionHelper.requestIfNeeded(requireActivity()) }
-        fab.setOnClickListener { if (clip != null) paste() else promptName(R.string.new_folder) { ops.mkdir(currentPath, it) } }
+        fab.setOnClickListener {
+            if (clip != null) paste()
+            else MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.create_new)
+                .setItems(arrayOf(getString(R.string.new_folder), getString(R.string.new_text_file))) { _, i ->
+                    if (i == 0) promptName(R.string.new_folder) { ops.mkdir(currentPath, it) } else newTextFile()
+                }.show()
+        }
         fab.setOnLongClickListener { if (clip != null) { clip = null; updateFab(); toast(R.string.cancel_paste) }; true }
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
@@ -118,6 +125,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (!main.rootActive && !PermissionHelper.hasStoragePermission(requireContext())) {
             adapter.items = emptyList()
             showEmpty(getString(R.string.no_permission), showGrant = true)
+            grantButton.setText(R.string.grant_permission)
+            grantButton.setOnClickListener { PermissionHelper.requestIfNeeded(requireActivity()) }
             swipe.isRefreshing = false
             return
         }
@@ -132,7 +141,15 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 if (it.isEmpty()) showEmpty(getString(R.string.empty_folder), false) else emptyView.visibility = View.GONE
             }.onFailure {
                 adapter.items = emptyList()
-                showEmpty(getString(R.string.failed, it.message ?: ""), false)
+                if (path.contains("/Android/obb") || path.contains("/Android/data")) {
+                    showEmpty(getString(R.string.obb_hint), showGrant = true)
+                    grantButton.setText(R.string.allow_access)
+                    grantButton.setOnClickListener {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+                            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                android.net.Uri.parse("package:${requireContext().packageName}")))
+                    }
+                } else showEmpty(getString(R.string.failed, it.message ?: ""), false)
             }
         }
     }
@@ -213,6 +230,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         when {
             f.isDir -> navigate(f.path)
             ApkInstaller.isApk(f.name) -> installApk(f)
+            MusicPlayer.isAudio(f.name) -> playMusic(f)
+            TextEditorActivity.isText(f.name) -> openText(f, edit = false)
             else -> openFile(f, chooser = false)
         }
     }
@@ -224,7 +243,11 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             m.add(0, 8, 0, R.string.install)
             if (main.rootActive) m.add(0, 9, 0, R.string.install_root)
         }
-        if (!f.isDir) { m.add(0, 1, 0, R.string.open_with); m.add(0, 7, 0, R.string.share) }
+        if (!f.isDir) {
+            if (MusicPlayer.isAudio(f.name)) m.add(0, 10, 0, R.string.play_music)
+            m.add(0, 11, 0, R.string.open_text)
+            m.add(0, 1, 0, R.string.open_with); m.add(0, 7, 0, R.string.share)
+        }
         m.add(0, 2, 0, R.string.rename)
         m.add(0, 3, 0, R.string.copy)
         m.add(0, 4, 0, R.string.cut)
@@ -240,6 +263,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 6 -> showDetails(f)
                 7 -> share(f)
                 8 -> installApk(f)
+                10 -> playMusic(f)
+                11 -> openText(f, edit = false)
                 9 -> runOp {
                     val r = ApkInstaller.installSilently(f.path)
                     if (!r.ok || r.out.contains("Failure")) throw java.io.IOException((r.err + r.out).trim())
@@ -349,6 +374,30 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         }
     }
 
+    private fun playMusic(f: FileItem) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val file = readableCopy(f)
+            startActivity(Intent(requireContext(), PlayerActivity::class.java).putExtra(PlayerActivity.EXTRA_PATH, file.path))
+        }
+    }
+
+    private fun openText(f: FileItem, edit: Boolean) {
+        startActivity(Intent(requireContext(), TextEditorActivity::class.java)
+            .putExtra(TextEditorActivity.EXTRA_PATH, f.path)
+            .putExtra(TextEditorActivity.EXTRA_ROOT, main.rootActive)
+            .putExtra(TextEditorActivity.EXTRA_EDIT, edit))
+    }
+
+    /** Creates a new .txt file and opens it in the built-in notepad. */
+    private fun newTextFile() {
+        promptName(R.string.new_text_file, "note.txt") { raw ->
+            val name = if (raw.contains('.')) raw else "$raw.txt"
+            ops.createFile(currentPath, name)
+            val path = File(currentPath, name).path
+            requireActivity().runOnUiThread { openText(FileItem(name, path, false, 0, 0), edit = true) }
+        }
+    }
+
     private fun installApk(f: FileItem) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -377,12 +426,18 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             val p = it.absolutePath.substringBefore("/Android/data")
             names += getString(R.string.sd_card, File(p).name); paths += p
         }
-        if (RootShell.deviceRooted) { names += getString(R.string.root_fs); paths += "/" }
+        names += getString(R.string.obb_folder); paths += "$internalRoot/Android/obb"
+        if (RootShell.deviceRooted) {
+            names += getString(R.string.data_folder); paths += "$internalRoot/Android/data"
+            names += getString(R.string.root_fs); paths += "/"
+        }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.storage)
             .setItems(names.toTypedArray()) { _, i ->
                 if (paths[i] == "/" && !main.rootActive) {
                     main.setRootMode(true) { ok -> if (ok) { limitPath = "/"; navigate("/") } }
+                } else if (paths[i].startsWith("$internalRoot/Android/")) {
+                    limitPath = internalRoot; navigate(paths[i]) // OBB / data: "up" goes back to storage
                 } else {
                     limitPath = paths[i]; navigate(paths[i])
                 }
@@ -411,7 +466,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 .setSingleChoiceItems(arrayOf(getString(R.string.sort_name), getString(R.string.sort_size), getString(R.string.sort_date)), prefs.sort) { d, i ->
                     prefs.sort = i; d.dismiss(); refresh()
                 }.show()
-            R.id.action_new_file -> promptName(R.string.new_file) { ops.createFile(currentPath, it) }
+            R.id.action_new_file -> newTextFile()
             R.id.action_refresh -> refresh()
             R.id.action_theme -> DeviceUi.chooseTheme(requireActivity(), prefs)
             else -> return false

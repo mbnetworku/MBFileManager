@@ -39,6 +39,9 @@
 - Open, share, rename, copy, move, paste, delete, details
 - Create folders and files · show hidden files · sort by name / size / date
 - **Tap an `.apk` to install it**
+- 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek)
+- 📝 **Built-in notepad**: text files open directly. Read, edit and save. Create new `.txt` files with ＋
+- 🎮 **OBB folder** shortcut (Storage → OBB folder) for game data
 
 ### 🗑️ Recycle Bin
 - Deleted files go to the **Bin** tab first, so you can **see and restore** them
@@ -57,6 +60,7 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 | | Not rooted | Rooted |
 |---|:---:|:---:|
 | Browse `/`, `/system`, `/data` | ❌ hidden | ✅ |
+| Open `Android/data` | ❌ hidden | ✅ |
 | Uninstall / restore system apps | ❌ hidden | ✅ |
 | Disable / enable apps | ❌ hidden | ✅ |
 | Silent APK install | ❌ hidden | ✅ |

@@ -80,4 +80,27 @@
     <string name="empty_trash">Empty Recycle Bin</string>
     <string name="empty_trash_confirm">Permanently delete everything in the Recycle Bin?</string>
     <string name="delete_bin_confirm">Move \"%1$s\" to the Recycle Bin? You can restore it later from the Bin tab.</string>
+    <string name="close">Close</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="repeat">Repeat one</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="play">Play / pause</string>
+    <string name="stop">Stop</string>
+    <string name="edit">Edit</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
+    <string name="discard">Discard</string>
+    <string name="word_wrap">Word wrap</string>
+    <string name="unsaved_title">Unsaved changes</string>
+    <string name="unsaved_message">Save your changes before closing?</string>
+    <string name="new_text_file">New text file (.txt)</string>
+    <string name="create_new">Create new</string>
+    <string name="open_text">Open as text</string>
+    <string name="play_music">Play in music player</string>
+    <string name="now_playing">Now playing</string>
+    <string name="obb_folder">OBB folder (game data)</string>
+    <string name="data_folder">Android/data folder</string>
+    <string name="obb_hint">Android blocks this folder.\n\nFor the OBB folder, allow \"Install unknown apps\" for MB File Manager, then come back.\nOn rooted devices, turn on Root mode to open OBB and Android/data.</string>
+    <string name="allow_access">Allow access</string>
 </resources>
