@@ -136,6 +136,11 @@ notification (cover, Previous / Play / Next / Stop, swipe = stop). `PlayerActivi
 (crop with aspect presets, rotate, flip, 9 filters, brightness / contrast / saturation, undo; save as copy or replace).
 Filters and sliders are combined into one `ColorMatrix` used for preview and for the saved image. JPEG quality 95.
 
+### Smart (on-device) photo tools
+`SmartTools` (photo editor → **AI** tab): `autoEnhance` (histogram percentiles → per-channel stretch + brightness + saturation as one
+`ColorMatrix`), `smartCrop` (faces from Android's `FaceDetector`, else the window with most edge energy), `pixelateFaces`,
+`portraitBlur` (blurred copy + radial mask around the faces). Nothing is uploaded. `FaceDetector` finds front-facing faces only.
+
 ### Video
 `VideoPlayerActivity` (VideoView, ±10 s, seek bar). `VideoEditorActivity` trims, mutes and rotates **without re-encoding**:
 `VideoTrimmer` copies samples between two times with `MediaExtractor` + `MediaMuxer` into an MP4 (start snaps to the previous
