@@ -67,7 +67,10 @@ Smooth slide / fade between screens, list items that rise in, a selection toolba
 - Open, share, rename, copy, move, paste, delete, details
 - Create folders and files · show hidden files · sort by name / size / date
 - **Tap an `.apk` to install it**
-- 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek), album art, a **playing queue** (tap to play, remove or delete songs) and a notification with controls
+- 🖼️ **Photo viewer**: swipe through the folder, pinch / double-tap zoom, share, delete
+- 🎨 **Photo editor**: crop (1:1, 4:3, 16:9…), rotate, flip, 9 filters, brightness / contrast / saturation, save as a copy or replace
+- 🎬 **Video player** (±10 s, seek bar) and **video editor**: trim, mute, rotate, saved as a new MP4 without losing quality
+- 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek), album art, an **animated equalizer**, a **playing queue** (tap to play, remove or delete songs) and a notification with controls
 - 📝 **Built-in notepad**: text files open directly. Read, edit and save. Create new `.txt` files with ＋
 - 🎮 **OBB folder** shortcut (Storage → OBB folder) for game data
 
@@ -113,6 +116,18 @@ The app **checks whether your device is rooted**. On a normal phone, root option
 | **Android TV** | Grid view, remote/D-pad friendly with a glowing focus outline, listed on the TV home screen |
 
 **Appearance** (⋮ → Appearance): theme **White**, **Black** or **System default**, plus **Liquid Glass** (frosted glass cards on a clean white or black background, with touch effects) and a **Transparency** slider for see-through glass cards, bars and panels (with background blur on Android 12+).
+
+## 🛠️ Technical documentation
+
+* [`docs/TECHNICAL.md`](docs/TECHNICAL.md): architecture, file map, design system, build / signing / release, limits
+* [`docs/CLAUDE.md`](docs/CLAUDE.md): project memory for AI assistants (rules, owner preferences, mistakes to avoid)
+
+| | |
+|---|---|
+| Min Android | 5.0 (API 21), target 34 |
+| Language | Kotlin 2.0, Views + Material 1.12 |
+| Build | GitHub Actions (`.github/workflows/build.yml`), signed with a key kept in GitHub Secrets |
+| Version scheme | `2.9.0.00N` |
 
 ## ©️ Copyright
 

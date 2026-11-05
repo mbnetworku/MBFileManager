@@ -39,6 +39,7 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var shuffle: ImageButton
     private lateinit var repeat: ImageButton
     private lateinit var cover: android.widget.ImageView
+    private lateinit var equalizer: EqualizerView
     private var shownCover: String? = null
     private var dragging = false
     private var queueDialog: BottomSheetDialog? = null
@@ -66,6 +67,7 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
         cover = findViewById(R.id.cover)
+        equalizer = findViewById(R.id.equalizer)
         title = findViewById(R.id.songTitle)
         folder = findViewById(R.id.songFolder)
         count = findViewById(R.id.songCount)
@@ -105,6 +107,7 @@ class PlayerActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         MusicPlayer.listener = { runOnUiThread { updateUi() } }
+        if (Prefs(this).animations) equalizer.start()
         updateUi()
         handler.post(ticker)
     }
@@ -112,6 +115,7 @@ class PlayerActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         MusicPlayer.listener = null
+        equalizer.stop()
         handler.removeCallbacks(ticker)
     }
 
@@ -133,6 +137,7 @@ class PlayerActivity : AppCompatActivity() {
                 .setInterpolator(android.view.animation.OvershootInterpolator(1.3f)).start()
             else { frame.scaleX = target; frame.scaleY = target }
         }
+        equalizer.playing = MusicPlayer.isPlaying
         queueAdapter?.notifyDataSetChanged()
         queueTitle?.text = getString(R.string.playing_queue_n, MusicPlayer.queue.size)
     }

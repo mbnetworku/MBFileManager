@@ -344,6 +344,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             ZipUtil.isZip(f.name) -> confirmExtract(f)
             OfficeDoc.isOffice(f.name) && OfficeDoc.kind(f.name) != "old" -> openOffice(f)
             ApkInstaller.isApk(f.name) -> installApk(f)
+            MediaTypes.isImage(f.name) && File(f.path).canRead() -> openPhoto(f)
+            MediaTypes.isVideo(f.name) && File(f.path).canRead() -> openVideo(f)
             MusicPlayer.isAudio(f.name) -> playMusic(f)
             TextEditorActivity.isText(f.name) -> openText(f, edit = false)
             else -> openFile(f, chooser = false)
@@ -630,6 +632,14 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                         }
                     }
                 }
+                MediaTypes.isImage(single.name) && File(single.path).canRead() -> {
+                    addRow(g1, R.string.view_photo, R.drawable.ic_image) { openPhoto(single) }
+                    addRow(g1, R.string.edit_photo, R.drawable.ic_edit) { editPhoto(single) }
+                }
+                MediaTypes.isVideo(single.name) && File(single.path).canRead() -> {
+                    addRow(g1, R.string.play_video, R.drawable.ic_play) { openVideo(single) }
+                    addRow(g1, R.string.edit_video, R.drawable.ic_edit) { editVideo(single) }
+                }
                 MusicPlayer.isAudio(single.name) -> addRow(g1, R.string.play_music, R.drawable.ic_play) { playMusic(single) }
                 OfficeDoc.isOffice(single.name) && OfficeDoc.kind(single.name) != "old" ->
                     addRow(g1, R.string.open_office, R.drawable.ic_doc) { openOffice(single) }
@@ -780,6 +790,18 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             startActivity(Intent(requireContext(), PlayerActivity::class.java).putExtra(PlayerActivity.EXTRA_PATH, file.path))
         }
     }
+
+    private fun openPhoto(f: FileItem) =
+        startActivity(Intent(requireContext(), PhotoViewerActivity::class.java).putExtra(PhotoViewerActivity.EXTRA_PATH, f.path))
+
+    private fun editPhoto(f: FileItem) =
+        startActivity(Intent(requireContext(), PhotoEditorActivity::class.java).putExtra(PhotoEditorActivity.EXTRA_PATH, f.path))
+
+    private fun openVideo(f: FileItem) =
+        startActivity(Intent(requireContext(), VideoPlayerActivity::class.java).putExtra(VideoPlayerActivity.EXTRA_PATH, f.path))
+
+    private fun editVideo(f: FileItem) =
+        startActivity(Intent(requireContext(), VideoEditorActivity::class.java).putExtra(VideoEditorActivity.EXTRA_PATH, f.path))
 
     private fun openOffice(f: FileItem) {
         startActivity(Intent(requireContext(), OfficeActivity::class.java).putExtra(OfficeActivity.EXTRA_PATH, f.path))
