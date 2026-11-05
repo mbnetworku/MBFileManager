@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,11 +16,24 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Build debug and release APKs
+      - name: Build release APK
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug assembleRelease
+          ./gradlew --no-daemon assembleRelease
+          VER=$(grep versionName app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
+          echo "VER=$VER" >> $GITHUB_ENV
+          cp app/build/outputs/apk/release/app-release.apk MBFileManager-v$VER.apk
       - uses: actions/upload-artifact@v4
         with:
           name: MBFileManager-apk
-          path: app/build/outputs/apk/**/*.apk
+          path: MBFileManager-v*.apk
+      - name: Publish release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VER }}
+          name: MB File Manager v${{ env.VER }}
+          files: MBFileManager-v*.apk
+          make_latest: true
+          body: |
+            MB File Manager for Android 5.0+.
+            Download the APK below and install it on your phone.
