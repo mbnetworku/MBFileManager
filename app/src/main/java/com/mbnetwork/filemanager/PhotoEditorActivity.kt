@@ -44,6 +44,7 @@ class PhotoEditorActivity : AppCompatActivity() {
     private var presetIndex = 0
     private var tool = 0             // 0 crop, 1 rotate, 2 filters, 3 adjust
     private var changed = false
+    private var enhance: ColorMatrix? = null     // "Auto enhance" result
 
     private val presets = listOf(
         Preset(R.string.f_original, null),
@@ -106,8 +107,9 @@ class PhotoEditorActivity : AppCompatActivity() {
         tabs.addView(UiKit.toolTab(this, R.drawable.ic_rotate_right, getString(R.string.rotate), i == 1) { selectTool(1) })
         tabs.addView(UiKit.toolTab(this, R.drawable.ic_image, getString(R.string.filters), i == 2) { selectTool(2) })
         tabs.addView(UiKit.toolTab(this, R.drawable.ic_tune, getString(R.string.adjust), i == 3) { selectTool(3) })
+        tabs.addView(UiKit.toolTab(this, R.drawable.ic_magic, getString(R.string.ai), i == 4) { selectTool(4) })
         panel.removeAllViews()
-        panel.addView(when (i) { 0 -> cropPanel(); 1 -> rotatePanel(); 2 -> filterPanel(); else -> adjustPanel() })
+        panel.addView(when (i) { 0 -> cropPanel(); 1 -> rotatePanel(); 2 -> filterPanel(); 3 -> adjustPanel(); else -> aiPanel() })
     }
 
     private fun row() = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -161,9 +163,74 @@ class PhotoEditorActivity : AppCompatActivity() {
         return col
     }
 
+    // ------------------------------------------------------------------ smart (on-device) tools
+
+    private fun toast(res: Int) = Toast.makeText(this, res, Toast.LENGTH_SHORT).show()
+
+    private fun aiPanel(): LinearLayout {
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val r = row()
+        r.addView(UiKit.pill(this, getString(R.string.ai_enhance), enhance != null) { toggleEnhance() })
+        r.addView(UiKit.pill(this, getString(R.string.ai_smart_crop)) { smartCrop() })
+        r.addView(UiKit.pill(this, getString(R.string.ai_blur_faces)) { blurFaces() })
+        r.addView(UiKit.pill(this, getString(R.string.ai_portrait)) { portraitBlur() })
+        col.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(r) })
+        col.addView(TextView(this).apply {
+            text = getString(R.string.ai_note); textSize = 11f; setTextColor(0x99FFFFFF.toInt())
+            setPadding(0, UiKit.dp(context, 6), 0, 0)
+        })
+        return col
+    }
+
+    private fun toggleEnhance() {
+        val b = bmp ?: return
+        if (enhance != null) { enhance = null; updatePreview(); selectTool(4); return }
+        lifecycleScope.launch {
+            val m = withContext(Dispatchers.Default) { runCatching { SmartTools.autoEnhance(b) }.getOrNull() }
+            if (m != null) { enhance = m; updatePreview(); toast(R.string.ai_enhanced) }
+            selectTool(4)
+        }
+    }
+
+    private fun smartCrop() {
+        val b = bmp ?: return
+        val aspect = canvas.aspect
+        lifecycleScope.launch {
+            val res = withContext(Dispatchers.Default) {
+                runCatching { val faces = SmartTools.detectFaces(b); SmartTools.smartCrop(b, faces, aspect) to faces.isNotEmpty() }.getOrNull()
+            }
+            if (res == null) { toast(R.string.photo_failed); return@launch }
+            val (rect, hadFaces) = res
+            if (rect.width() < 2 || rect.height() < 2) return@launch
+            transform { Bitmap.createBitmap(it, rect.left, rect.top, rect.width(), rect.height()) }
+            toast(if (hadFaces) R.string.ai_cropped_faces else R.string.ai_cropped_area)
+        }
+    }
+
+    private fun blurFaces() {
+        val b = bmp ?: return
+        lifecycleScope.launch {
+            val faces = withContext(Dispatchers.Default) { runCatching { SmartTools.detectFaces(b) }.getOrDefault(emptyList()) }
+            if (faces.isEmpty()) { toast(R.string.ai_no_faces); return@launch }
+            val out = withContext(Dispatchers.Default) { runCatching { SmartTools.pixelateFaces(b, faces) }.getOrNull() }
+            if (out != null) transform { out }
+        }
+    }
+
+    private fun portraitBlur() {
+        val b = bmp ?: return
+        lifecycleScope.launch {
+            val out = withContext(Dispatchers.Default) {
+                try { SmartTools.portraitBlur(b, SmartTools.detectFaces(b)) } catch (t: Throwable) { null }
+            }
+            if (out != null) transform { out } else toast(R.string.photo_failed)
+        }
+    }
+
     /** filter + adjustments as one colour matrix */
     private fun buildMatrix(): ColorMatrix {
         val cm = ColorMatrix()
+        enhance?.let { cm.postConcat(it) }
         cm.postConcat(ColorMatrix().apply { setSaturation(saturation) })
         val t = (1f - contrast) * 127.5f + brightness
         cm.postConcat(ColorMatrix(floatArrayOf(

@@ -281,4 +281,14 @@
     <string name="saving">Saving…</string>
     <string name="equalizer_real">Equalizer follows the music (microphone permission)</string>
     <string name="photo_external">This photo format cannot be shown inside the app on this Android version (HEIC needs Android 9 or newer). Open it with another app?</string>
+    <string name="ai">AI</string>
+    <string name="ai_enhance">Auto enhance</string>
+    <string name="ai_smart_crop">Smart crop</string>
+    <string name="ai_blur_faces">Blur faces</string>
+    <string name="ai_portrait">Portrait blur</string>
+    <string name="ai_no_faces">No faces found in this photo.</string>
+    <string name="ai_enhanced">Auto enhance applied</string>
+    <string name="ai_cropped_faces">Cropped around the faces</string>
+    <string name="ai_cropped_area">Cropped to the most interesting area</string>
+    <string name="ai_note">Smart tools run on your phone. Nothing is uploaded.</string>
 </resources>
