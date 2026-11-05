@@ -76,14 +76,14 @@ class FileAdapter(
         if (mode == ICONS) bindIconMode(h, f, icon, color) else {
             // glossy gradient tile with white symbol; real thumbnail when available
             val dd = ctx.resources.displayMetrics.density
-            h.icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, color))
+            h.icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, color), 15f)
             ViewCompat.setBackgroundTintList(h.icon, null)
             ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
             h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
             val p = ((if (mode == GRID) 16 else 11) * dd).toInt(); h.icon.setPadding(p, p, p, p)
             h.icon.clipToOutline = true
             h.icon.outlineProvider = object : ViewOutlineProvider() {
-                override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, 12 * dd)
+                override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, 15 * dd)
             }
             if (!f.isDir && ThumbLoader.canThumb(f.name)) ThumbLoader.load(ctx, f.path, h.icon) {
                 ImageViewCompat.setImageTintList(h.icon, null)
@@ -121,29 +121,23 @@ class FileAdapter(
         h.name.maxLines = 2
         h.name.ellipsize = android.text.TextUtils.TruncateAt.END
         h.name.textSize = if (columns >= 5) 12f else 14f
+        val radiusDp = size / d * 0.26f // soft "squircle" corners
         h.icon.clipToOutline = true
         h.icon.outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, 14 * d)
+            override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, radiusDp * d)
         }
-        if (f.isDir) {
-            h.icon.background = null
-            h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
-            h.icon.setPadding(0, 0, 0, 0)
-            ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.icon_folder)))
-            return
-        }
-        h.icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, color), 14f)
+        h.icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, color), radiusDp)
         ViewCompat.setBackgroundTintList(h.icon, null)
         ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
         h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
-        val p = (22 * d).toInt(); h.icon.setPadding(p, p, p, p)
+        val p = (size * 0.24f).toInt(); h.icon.setPadding(p, p, p, p)
         if (ThumbLoader.canThumb(f.name)) {
             ThumbLoader.load(ctx, f.path, h.icon) {
                 ImageViewCompat.setImageTintList(h.icon, null)
                 h.icon.setPadding(0, 0, 0, 0)
                 val apk = f.name.lowercase().endsWith(".apk")
                 h.icon.scaleType = if (apk) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
-                if (apk) { val q = (10 * d).toInt(); h.icon.setPadding(q, q, q, q); h.icon.background = DeviceUi.tile(ctx, 0xFF607D8B.toInt(), 14f) }
+                if (apk) { val q = (10 * d).toInt(); h.icon.setPadding(q, q, q, q); h.icon.background = DeviceUi.tile(ctx, 0xFF607D8B.toInt(), radiusDp) }
             }
         }
     }
