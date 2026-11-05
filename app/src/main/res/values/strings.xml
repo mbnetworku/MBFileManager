@@ -177,7 +177,7 @@
     <string name="usb_drive">USB drive</string>
     <string name="usb_tap_to_read">Tap \"Read drive\" to see its format and size</string>
     <string name="usb_read_info">Read drive</string>
-    <string name="usb_browse">Browse and copy to phone</string>
+    <string name="usb_browse">Open drive (read and write)</string>
     <string name="usb_rename">Rename drive</string>
     <string name="usb_rename_hint">New drive name (max 11 letters, FAT32 drives).</string>
     <string name="usb_renamed">Drive renamed. Unplug and plug it in again to see the new name.</string>
@@ -200,4 +200,10 @@
     <string name="copy_folder">Copy this folder</string>
     <string name="copying">Copying %1$s…</string>
     <string name="copied_to">Copied to %1$s</string>
+    <string name="usb_upload">Upload</string>
+    <string name="usb_uploading">Copying to USB…</string>
+    <string name="usb_uploaded">%1$d file(s) copied to USB</string>
+    <string name="usb_to_phone">To phone</string>
+    <string name="usb_up">Back to parent folder</string>
+    <string name="folder">Folder</string>
 </resources>

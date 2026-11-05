@@ -62,7 +62,7 @@
 
 ### 🔌 USB drive tools
 - Finds USB OTG drives, card readers and SD cards, with a live "USB drive connected" alert
-- Works even when the phone doesn't show the drive: read format & size, browse FAT32, copy to phone
+- Works even when the phone does not show the drive: read format & size, **open the drive with read and write**: upload from phone, new folder, rename, delete, copy to phone
 - **Format as FAT32** (no root needed; converts NTFS / exFAT drives too) and **rename the drive**
 - NTFS / exFAT: mount with root; without root use Format as FAT32
 

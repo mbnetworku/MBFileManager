@@ -181,7 +181,40 @@ class UsbToolsActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- browse FAT32 + copy to phone ----------
+    // ---------- full USB browser: read AND write (FAT32) ----------
+    private var curFs: me.jahnen.libaums.core.fs.FileSystem? = null
+    private var curDir: UsbFile? = null
+    private var browsing = false
+
+    private val pickFiles = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        val dir = curDir ?: return@registerForActivityResult
+        val fs = curFs ?: return@registerForActivityResult
+        if (uris.isNullOrEmpty()) return@registerForActivityResult
+        val bar = LinearProgressIndicator(this).apply { max = uris.size }
+        val dlg = MaterialAlertDialogBuilder(this).setTitle(R.string.usb_uploading)
+            .setView(FrameLayout(this).apply { setPadding(px(24), px(8), px(24), 0); addView(bar) }).setCancelable(false).show()
+        lifecycleScope.launch {
+            val r = withContext(Dispatchers.IO) {
+                runCatching {
+                    uris.forEachIndexed { i, u ->
+                        var name = "file"
+                        contentResolver.query(u, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c -> if (c.moveToFirst()) name = c.getString(0) ?: name }
+                        val existing = dir.search(name)
+                        existing?.delete()
+                        val target = dir.createFile(name)
+                        contentResolver.openInputStream(u)?.use { input ->
+                            java.io.BufferedOutputStream(me.jahnen.libaums.core.fs.UsbFileOutputStream(target), fs.chunkSize).use { input.copyTo(it, fs.chunkSize) }
+                        }
+                        runOnUiThread { bar.progress = i + 1 }
+                    }
+                }
+            }
+            dlg.dismiss()
+            Toast.makeText(this@UsbToolsActivity, r.fold({ getString(R.string.usb_uploaded, uris.size) }, { getString(R.string.failed, it.message ?: "") }), Toast.LENGTH_LONG).show()
+            showDir(dir, fs)
+        }
+    }
+
     private fun browse(dev: UsbMassStorageDevice) {
         val fs = runCatching { dev.partitions.firstOrNull()?.fileSystem }.getOrNull()
         if (fs == null) {
@@ -191,17 +224,101 @@ class UsbToolsActivity : AppCompatActivity() {
         showDir(fs.rootDirectory, fs)
     }
 
+    override fun onBackPressed() {
+        val d = curDir
+        if (browsing && d != null && !d.isRoot && d.parent != null) showDir(d.parent!!, curFs!!)
+        else if (browsing) { browsing = false; supportActionBar?.setTitle(R.string.usb_tools); supportActionBar?.subtitle = null; render() }
+        else @Suppress("DEPRECATION") super.onBackPressed()
+    }
+
     private fun showDir(dir: UsbFile, fs: me.jahnen.libaums.core.fs.FileSystem) {
+        curDir = dir; curFs = fs; browsing = true
+        supportActionBar?.title = fs.volumeLabel.ifBlank { getString(R.string.usb_drive) }
+        supportActionBar?.subtitle = if (dir.isRoot) "/" else dir.absolutePath
         lifecycleScope.launch {
-            val files = withContext(Dispatchers.IO) { runCatching { dir.listFiles().sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) }.getOrDefault(emptyList()) }
-            val names = files.map { (if (it.isDirectory) "📁 " else "📄 ") + it.name + if (!it.isDirectory) "  (${Formatter.formatShortFileSize(this@UsbToolsActivity, it.length)})" else "" }
-            val b = MaterialAlertDialogBuilder(this@UsbToolsActivity)
-                .setTitle(if (dir.isRoot) (fs.volumeLabel.ifBlank { getString(R.string.usb_drive) }) else dir.name)
-                .setItems(names.toTypedArray()) { _, i -> val f = files[i]; if (f.isDirectory) showDir(f, fs) else copyToPhone(f, fs) }
-                .setNegativeButton(R.string.close, null)
-            if (!dir.isRoot) b.setNeutralButton(R.string.copy_folder) { _, _ -> copyToPhone(dir, fs) }
-            if (files.isEmpty()) b.setMessage(R.string.empty_folder)
-            b.show()
+            val files = withContext(Dispatchers.IO) {
+                runCatching { dir.listFiles().sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) }.getOrDefault(emptyList())
+            }
+            box.removeAllViews()
+            // action bar: Up · Upload · New folder · Copy folder
+            box.addView(LinearLayout(this@UsbToolsActivity).apply {
+                fun act(t: Int, ic: Int, a: () -> Unit) = addView(MaterialButton(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                    setText(t); isAllCaps = false; setIconResource(ic); iconSize = px(18); textSize = 12f
+                    iconTint = android.content.res.ColorStateList.valueOf(ContextCompat.getColor(context, R.color.grad_start))
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(px(2), 0, px(2), 0) }
+                    setOnClickListener { a() }
+                })
+                act(R.string.usb_upload, R.drawable.ic_add) { pickFiles.launch(arrayOf("*/*")) }
+                act(R.string.new_folder, R.drawable.ic_new_folder) { newUsbFolder(dir, fs) }
+                if (!dir.isRoot) act(R.string.usb_to_phone, R.drawable.ic_copy) { copyToPhone(dir, fs) }
+            })
+            box.addView(text(getString(R.string.free_space, Formatter.formatFileSize(this@UsbToolsActivity, fs.freeSpace)), 12f, alpha = 0.6f)
+                .apply { setPadding(px(8), px(6), px(8), px(4)) })
+            if (!dir.isRoot) box.addView(row("..", R.drawable.ic_up, R.color.t_file, getString(R.string.usb_up)) { dir.parent?.let { showDir(it, fs) } })
+            if (files.isEmpty()) box.addView(text(getString(R.string.empty_folder), 15f, alpha = 0.6f).apply { gravity = Gravity.CENTER; setPadding(0, px(40), 0, px(40)) })
+            files.forEach { f ->
+                val item = FileItem(f.name, f.absolutePath, f.isDirectory, if (f.isDirectory) 0 else f.length, runCatching { f.lastModified() }.getOrDefault(0))
+                val (ic, col) = FileAdapter.typeOf(item)
+                val sub = if (f.isDirectory) getString(R.string.folder) else Formatter.formatShortFileSize(this@UsbToolsActivity, f.length)
+                box.addView(row(f.name, ic, col, sub, { fileMenu(f, dir, fs) }) { if (f.isDirectory) showDir(f, fs) else fileMenu(f, dir, fs) })
+            }
+        }
+    }
+
+    private fun row(title: String, ic: Int, col: Int, sub: String, long: (() -> Unit)? = null, click: () -> Unit) = card(LinearLayout(this).apply {
+        gravity = Gravity.CENTER_VERTICAL; setPadding(px(12), px(10), px(12), px(10))
+        addView(android.widget.ImageView(context).apply {
+            setImageResource(ic); background = DeviceUi.tile(context, ContextCompat.getColor(context, col), 11f)
+            androidx.core.widget.ImageViewCompat.setImageTintList(this, android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt()))
+            setPadding(px(9), px(9), px(9), px(9)); layoutParams = LinearLayout.LayoutParams(px(42), px(42))
+        })
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL; setPadding(px(12), 0, 0, 0)
+            addView(text(title, 15f).apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.MIDDLE })
+            addView(text(sub, 12f, alpha = 0.6f))
+        })
+    }).apply {
+        isClickable = true; isFocusable = true
+        setOnClickListener { click() }
+        long?.let { l -> setOnLongClickListener { l(); true } }
+        DeviceUi.applyFocusEffect(this); DeviceUi.liquidTouch(this)
+    }
+
+    private fun fileMenu(f: UsbFile, dir: UsbFile, fs: me.jahnen.libaums.core.fs.FileSystem) {
+        val opts = mutableListOf(getString(R.string.usb_to_phone), getString(R.string.rename), getString(R.string.delete))
+        if (f.isDirectory) opts.add(0, getString(R.string.open))
+        MaterialAlertDialogBuilder(this).setTitle(f.name).setItems(opts.toTypedArray()) { _, i ->
+            when (opts[i]) {
+                getString(R.string.open) -> showDir(f, fs)
+                getString(R.string.usb_to_phone) -> copyToPhone(f, fs)
+                getString(R.string.rename) -> renameUsbFile(f, dir, fs)
+                getString(R.string.delete) -> MaterialAlertDialogBuilder(this).setTitle(R.string.delete)
+                    .setMessage(getString(R.string.delete_confirm, f.name))
+                    .setPositiveButton(R.string.delete) { _, _ -> usbOp(dir, fs) { f.delete() } }
+                    .setNegativeButton(R.string.cancel, null).show()
+            }
+        }.show()
+    }
+
+    private fun askName(title: Int, initial: String, done: (String) -> Unit) {
+        val input = EditText(this).apply { setText(initial); setSingleLine(); selectAll() }
+        MaterialAlertDialogBuilder(this).setTitle(title)
+            .setView(FrameLayout(this).apply { setPadding(px(22), px(6), px(22), 0); addView(input) })
+            .setPositiveButton(R.string.ok) { _, _ -> input.text.toString().trim().takeIf { it.isNotEmpty() && '/' !in it }?.let(done) }
+            .setNegativeButton(R.string.cancel, null).show()
+    }
+
+    private fun newUsbFolder(dir: UsbFile, fs: me.jahnen.libaums.core.fs.FileSystem) =
+        askName(R.string.new_folder, getString(R.string.new_folder)) { n -> usbOp(dir, fs) { dir.createDirectory(n) } }
+
+    private fun renameUsbFile(f: UsbFile, dir: UsbFile, fs: me.jahnen.libaums.core.fs.FileSystem) =
+        askName(R.string.rename, f.name) { n -> usbOp(dir, fs) { f.name = n } }
+
+    private fun usbOp(dir: UsbFile, fs: me.jahnen.libaums.core.fs.FileSystem, op: () -> Unit) {
+        lifecycleScope.launch {
+            val r = withContext(Dispatchers.IO) { runCatching(op) }
+            Toast.makeText(this@UsbToolsActivity, r.fold({ getString(R.string.done) }, { getString(R.string.failed, it.message ?: "") }), Toast.LENGTH_SHORT).show()
+            showDir(dir, fs)
         }
     }
 
