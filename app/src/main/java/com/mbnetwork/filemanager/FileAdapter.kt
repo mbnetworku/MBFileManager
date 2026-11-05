@@ -1,13 +1,11 @@
 package com.mbnetwork.filemanager
 
 import android.content.res.ColorStateList
-import android.graphics.Outline
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewOutlineProvider
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -42,6 +40,8 @@ class FileAdapter(
         notifyItemChanged(items.indexOf(f))
     }
 
+    fun clearSelection() { selected.clear(); notifyDataSetChanged() }
+
     fun selectAll() { selected.clear(); items.forEach { selected += it.path }; notifyDataSetChanged() }
     fun selectedItems() = items.filter { it.path in selected }
 
@@ -67,31 +67,22 @@ class FileAdapter(
         val f = items[position]
         val ctx = h.itemView.context
         h.name.text = f.name
+        val tagColor = Tags.color(ctx, f.path)
+        if (tagColor != null) {
+            val dd = ctx.resources.displayMetrics.density
+            val dot = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(tagColor); setSize((9 * dd).toInt(), (9 * dd).toInt())
+            }
+            h.name.setCompoundDrawablesRelativeWithIntrinsicBounds(dot, null, null, null)
+            h.name.compoundDrawablePadding = (6 * dd).toInt()
+        } else h.name.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null)
         h.itemView.alpha = if (f.isHidden) 0.6f else 1f
         (h.itemView as? MaterialCardView)?.let { DeviceUi.styleCard(it) }
 
-        val (icon, color) = typeOf(f)
-        h.icon.setImageResource(icon)
-        h.icon.tag = null
-        if (mode == ICONS) bindIconMode(h, f, icon, color) else {
-            // glossy gradient tile with white symbol; real thumbnail when available
-            val dd = ctx.resources.displayMetrics.density
-            h.icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, color), 15f)
-            ViewCompat.setBackgroundTintList(h.icon, null)
-            ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
-            h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
-            val p = ((if (mode == GRID) 16 else 11) * dd).toInt(); h.icon.setPadding(p, p, p, p)
-            h.icon.clipToOutline = true
-            h.icon.outlineProvider = object : ViewOutlineProvider() {
-                override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, 15 * dd)
-            }
-            if (!f.isDir && ThumbLoader.canThumb(f.name)) ThumbLoader.load(ctx, f.path, h.icon) {
-                ImageViewCompat.setImageTintList(h.icon, null)
-                val apk = f.name.lowercase().endsWith(".apk")
-                h.icon.setPadding(if (apk) p / 3 else 0, if (apk) p / 3 else 0, if (apk) p / 3 else 0, if (apk) p / 3 else 0)
-                h.icon.scaleType = if (apk) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
-            }
-        }
+        // Windows-style file icon (yellow folder / white page with a type label); real preview if available
+        if (mode == ICONS) sizeIconMode(h)
+        bindFileIcon(h.icon, f)
 
         h.chevron?.visibility = if (f.isDir && !selectionMode) View.VISIBLE else View.GONE
         val isSel = f.path in selected
@@ -110,11 +101,10 @@ class FileAdapter(
         h.itemView.setOnLongClickListener { onLongClick(f, it); true }
     }
 
-    /** Big icons: folders without background, photos/videos/APKs show a real preview. */
-    private fun bindIconMode(h: VH, f: FileItem, icon: Int, color: Int) {
+    /** Thumbnail size follows the column width so icons are never squeezed. */
+    private fun sizeIconMode(h: VH) {
         val ctx = h.itemView.context
         val d = ctx.resources.displayMetrics.density
-        // square thumbnail that fits the column (never squeezed)
         val parentW = (h.itemView.parent as? View)?.width?.takeIf { it > 0 } ?: ctx.resources.displayMetrics.widthPixels
         val size = ((parentW / columns) - (18 * d)).toInt().coerceIn((40 * d).toInt(), (64 * d).toInt())
         (h.icon.parent as View).layoutParams = (h.icon.parent as View).layoutParams.apply { width = size; height = size }
@@ -122,23 +112,31 @@ class FileAdapter(
         h.name.ellipsize = android.text.TextUtils.TruncateAt.END
         h.name.textSize = if (columns >= 6) 11f else 12.5f
         h.info.textSize = 10f
-        val radiusDp = size / d * 0.26f // soft "squircle" corners
-        h.icon.clipToOutline = true
-        h.icon.outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, radiusDp * d)
-        }
-        h.icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, color), radiusDp)
-        ViewCompat.setBackgroundTintList(h.icon, null)
-        ImageViewCompat.setImageTintList(h.icon, ColorStateList.valueOf(0xFFFFFFFF.toInt()))
-        h.icon.scaleType = ImageView.ScaleType.FIT_CENTER
-        val p = (size * 0.24f).toInt(); h.icon.setPadding(p, p, p, p)
-        if (ThumbLoader.canThumb(f.name)) {
-            ThumbLoader.load(ctx, f.path, h.icon) {
-                ImageViewCompat.setImageTintList(h.icon, null)
-                h.icon.setPadding(0, 0, 0, 0)
-                val apk = f.name.lowercase().endsWith(".apk")
-                h.icon.scaleType = if (apk) ImageView.ScaleType.FIT_CENTER else ImageView.ScaleType.CENTER_CROP
-                if (apk) { val q = (10 * d).toInt(); h.icon.setPadding(q, q, q, q); h.icon.background = DeviceUi.tile(ctx, 0xFF607D8B.toInt(), radiusDp) }
+    }
+
+    private fun bindFileIcon(img: ImageView, f: FileItem) {
+        val ctx = img.context
+        val d = ctx.resources.displayMetrics.density
+        img.tag = null
+        img.setImageDrawable(FileIcons.drawable(f))
+        img.background = null
+        ViewCompat.setBackgroundTintList(img, null)
+        ImageViewCompat.setImageTintList(img, null)
+        img.scaleType = ImageView.ScaleType.FIT_CENTER
+        img.setPadding(0, 0, 0, 0)
+        img.clipToOutline = false
+        if (!f.isDir && ThumbLoader.canThumb(f.name)) ThumbLoader.load(ctx, f.path, img) {
+            if (f.name.lowercase().endsWith(".apk")) {
+                // app icon of the APK
+                val q = (3 * d).toInt()
+                img.setPadding(q, q, q, q)
+            } else {
+                // photo / video frame / album art / PDF page inside a thin rounded frame (like Windows thumbnails)
+                img.scaleType = ImageView.ScaleType.CENTER_CROP
+                img.setBackgroundResource(R.drawable.bg_thumb_win)
+                val q = d.toInt().coerceAtLeast(1)
+                img.setPadding(q, q, q, q)
+                img.clipToOutline = true
             }
         }
     }

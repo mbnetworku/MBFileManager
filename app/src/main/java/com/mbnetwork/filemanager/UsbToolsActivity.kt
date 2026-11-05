@@ -261,23 +261,20 @@ class UsbToolsActivity : AppCompatActivity() {
             })
             box.addView(text(getString(R.string.free_space, Formatter.formatFileSize(this@UsbToolsActivity, fs.freeSpace)), 12f, alpha = 0.6f)
                 .apply { setPadding(px(8), px(6), px(8), px(4)) })
-            if (!dir.isRoot) box.addView(row("..", R.drawable.ic_up, R.color.t_file, getString(R.string.usb_up)) { dir.parent?.let { showDir(it, fs) } })
+            if (!dir.isRoot) box.addView(row("..", FileIcons.drawable(FileItem("..", "..", true, 0, 0)), getString(R.string.usb_up)) { dir.parent?.let { showDir(it, fs) } })
             if (files.isEmpty()) box.addView(text(getString(R.string.empty_folder), 15f, alpha = 0.6f).apply { gravity = Gravity.CENTER; setPadding(0, px(40), 0, px(40)) })
             files.forEach { f ->
                 val item = FileItem(f.name, f.absolutePath, f.isDirectory, if (f.isDirectory) 0 else f.length, runCatching { f.lastModified() }.getOrDefault(0))
-                val (ic, col) = FileAdapter.typeOf(item)
                 val sub = if (f.isDirectory) getString(R.string.folder) else Formatter.formatShortFileSize(this@UsbToolsActivity, f.length)
-                box.addView(row(f.name, ic, col, sub, { fileMenu(f, dir, fs) }) { if (f.isDirectory) showDir(f, fs) else fileMenu(f, dir, fs) })
+                box.addView(row(f.name, FileIcons.drawable(item), sub, { fileMenu(f, dir, fs) }) { if (f.isDirectory) showDir(f, fs) else fileMenu(f, dir, fs) })
             }
         }
     }
 
-    private fun row(title: String, ic: Int, col: Int, sub: String, long: (() -> Unit)? = null, click: () -> Unit) = card(LinearLayout(this).apply {
+    private fun row(title: String, icon: android.graphics.drawable.Drawable, sub: String, long: (() -> Unit)? = null, click: () -> Unit) = card(LinearLayout(this).apply {
         gravity = Gravity.CENTER_VERTICAL; setPadding(px(12), px(10), px(12), px(10))
         addView(android.widget.ImageView(context).apply {
-            setImageResource(ic); background = DeviceUi.tile(context, ContextCompat.getColor(context, col), 11f)
-            androidx.core.widget.ImageViewCompat.setImageTintList(this, android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt()))
-            setPadding(px(9), px(9), px(9), px(9)); layoutParams = LinearLayout.LayoutParams(px(42), px(42))
+            setImageDrawable(icon); layoutParams = LinearLayout.LayoutParams(px(42), px(42))
         })
         addView(LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL; setPadding(px(12), 0, 0, 0)

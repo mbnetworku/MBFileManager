@@ -34,7 +34,15 @@
 
 ## ✨ Features
 
-### 🏠 Home screen
+### 🍏 iOS-style design (Liquid Glass)
+- **Browse screen** like the iOS Files app: large title, search with filter chips, collapsible **Locations / Favorites / Tags**
+- **Tabs:** Recents · Browse · Apps in a floating glass capsule; the top bar is glass too and blurs what scrolls under it
+- **Folder screens:** back arrow, round "…" menu (Select, New Folder, Icons / List, Sort…)
+- **Select mode:** "Select All / Done", "N Selected", round check badges, and a batch toolbar (Share, Copy, Move, Zip, Delete) that replaces the tab bar
+- **Colour tags:** Red / Orange / Blue / Green (long-press a file → Tags)
+- **Windows-style file icons:** yellow folders and white pages with coloured type labels (PDF, DOCX, XLSX, MP3 …)
+
+### 🏠 Browse screen
 - Search all files by name
 - Storage cards with usage bars
 - Categories with counts: Images, Videos, Music, Documents, APKs, Archives, Downloads, Large files

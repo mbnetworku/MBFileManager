@@ -46,10 +46,12 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
             adapter = this@AppsFragment.adapter
         }
         swipe.setOnRefreshListener { refresh() }
+        val topInset = (requireActivity() as MainActivity).topInset
         if (!DeviceUi.isLarge(requireContext())) view.findViewById<RecyclerView>(R.id.list).apply {
             clipToPadding = false
-            setPadding(paddingLeft, paddingTop, paddingRight, (100 * resources.displayMetrics.density).toInt())
+            setPadding(paddingLeft, paddingTop + topInset, paddingRight, (100 * resources.displayMetrics.density).toInt())
         }
+        swipe.setProgressViewOffset(false, topInset, topInset + (64 * resources.displayMetrics.density).toInt())
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -60,6 +62,7 @@ class AppsFragment : Fragment(R.layout.fragment_apps), Refreshable, MenuProvider
 
     override fun refresh() {
         if (!isAdded) return
+        main.setNavMode(false)
         main.supportActionBar?.title = getString(R.string.tab_apps)
         swipe.isRefreshing = true
         val pm = requireContext().packageManager

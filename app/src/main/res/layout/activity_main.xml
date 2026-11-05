@@ -5,81 +5,92 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
-
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@drawable/bg_glossy"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
-        app:popupTheme="@style/Theme.MBFileManager"
-        app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
-
     <FrameLayout
+        android:id="@+id/root"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="match_parent">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal">
-
-        <!-- Tablets & Android TV: side rail (D-pad friendly) -->
-        <com.google.android.material.navigationrail.NavigationRailView
-            android:id="@+id/navRail"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:background="@color/card_bg"
-            android:visibility="gone"
-            app:labelVisibilityMode="labeled"
-            app:menuGravity="center"
-            app:menu="@menu/bottom_nav" />
-
-        <FrameLayout
-            android:id="@+id/container"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
-    </LinearLayout>
-
-    <!-- Phones: floating rounded glass bottom bar -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNav"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="14dp"
-        android:elevation="12dp"
-        app:itemActiveIndicatorStyle="@style/GlassIndicator"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/bottom_nav" />
-    </FrameLayout>
-
-
-</LinearLayout>
-
-    <!-- Sidebar: storage & places (hidden until opened) -->
-    <ScrollView
-        android:id="@+id/drawerPanel"
-        android:layout_width="300dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:background="@color/sheet_bg"
-        android:elevation="16dp">
-
+        <!-- content: side rail (tablet / TV) + the screen -->
         <LinearLayout
-            android:id="@+id/drawerContent"
+            android:id="@+id/row"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <com.google.android.material.navigationrail.NavigationRailView
+                android:id="@+id/navRail"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@color/card_bg"
+                android:visibility="gone"
+                app:labelVisibilityMode="labeled"
+                app:menuGravity="center"
+                app:menu="@menu/bottom_nav" />
+
+            <FrameLayout
+                android:id="@+id/container"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <!-- Liquid Glass top bar: content scrolls underneath and is blurred -->
+        <com.mbnetwork.filemanager.GlassView
+            android:id="@+id/topGlass"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="16dp" />
-    </ScrollView>
+            android:layout_gravity="top">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@android:color/transparent"
+                app:popupTheme="@style/Theme.MBFileManager"
+                app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
+        </com.mbnetwork.filemanager.GlassView>
+
+        <!-- Liquid Glass floating tab bar (capsule) -->
+        <com.mbnetwork.filemanager.GlassView
+            android:id="@+id/bottomGlass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="14dp"
+            android:elevation="10dp">
+
+            <com.google.android.material.bottomnavigation.BottomNavigationView
+                android:id="@+id/bottomNav"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:elevation="0dp"
+                app:itemActiveIndicatorStyle="@style/GlassIndicator"
+                app:labelVisibilityMode="labeled"
+                app:menu="@menu/bottom_nav" />
+        </com.mbnetwork.filemanager.GlassView>
+    </FrameLayout>
+
+    <!-- Sidebar: Liquid Glass panel (hidden until opened) -->
+    <com.mbnetwork.filemanager.GlassView
+        android:id="@+id/drawerPanel"
+        android:layout_width="310dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:layout_margin="8dp"
+        android:elevation="16dp">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:id="@+id/drawerContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="16dp" />
+        </ScrollView>
+    </com.mbnetwork.filemanager.GlassView>
 </androidx.drawerlayout.widget.DrawerLayout>

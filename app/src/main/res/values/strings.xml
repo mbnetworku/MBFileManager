@@ -153,7 +153,7 @@
     <string name="columns">Columns</string>
     <string name="columns_auto">Auto</string>
     <string name="columns_hint">Tip: pinch the file list to zoom in or out.</string>
-    <string name="tab_home">Home</string>
+    <string name="tab_home">Browse</string>
     <string name="categories">Categories</string>
     <string name="recent_files">Recent files</string>
     <string name="tools">Tools</string>
@@ -213,4 +213,16 @@
     <string name="usb_no_partitions">No readable partition table</string>
     <string name="usb_partitions">Partitions: %1$d</string>
     <string name="usb_partition_line">Partition %1$d: %2$s, %3$s</string>
+    <string name="tab_recents">Recents</string>
+    <string name="locations">Locations</string>
+    <string name="favorites">Favorites</string>
+    <string name="tags">Tags</string>
+    <string name="tag_red">Red</string>
+    <string name="tag_orange">Orange</string>
+    <string name="tag_blue">Blue</string>
+    <string name="tag_green">Green</string>
+    <string name="tag_files">%1$s tag</string>
+    <string name="recently_deleted">Recently Deleted</string>
+    <string name="select_items">Select Items</string>
+    <string name="deselect_all">Deselect All</string>
 </resources>

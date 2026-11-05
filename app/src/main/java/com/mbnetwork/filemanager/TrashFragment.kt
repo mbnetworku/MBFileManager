@@ -40,10 +40,12 @@ class TrashFragment : Fragment(R.layout.fragment_trash), Refreshable, MenuProvid
             this@TrashFragment.adapter.glassColor = DeviceUi.glass(requireContext(), R.color.card_bg)
         }
         swipe.setOnRefreshListener { refresh() }
+        val topInset = (requireActivity() as MainActivity).topInset
         if (!DeviceUi.isLarge(requireContext())) view.findViewById<RecyclerView>(R.id.list).apply {
             clipToPadding = false
-            setPadding(paddingLeft, paddingTop, paddingRight, (100 * resources.displayMetrics.density).toInt())
+            setPadding(paddingLeft, paddingTop + topInset, paddingRight, (100 * resources.displayMetrics.density).toInt())
         }
+        swipe.setProgressViewOffset(false, topInset, topInset + (64 * resources.displayMetrics.density).toInt())
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -51,6 +53,7 @@ class TrashFragment : Fragment(R.layout.fragment_trash), Refreshable, MenuProvid
 
     override fun refresh() {
         if (!isAdded) return
+        main.setNavMode(parentFragmentManager.backStackEntryCount > 0) { requireActivity().onBackPressedDispatcher.onBackPressed() }
         main.supportActionBar?.title = getString(R.string.tab_trash)
         swipe.isRefreshing = true
         val ctx = requireContext().applicationContext

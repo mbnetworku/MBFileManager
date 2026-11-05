@@ -88,40 +88,13 @@ object DeviceUi {
 
     fun liquid(ctx: Context) = Prefs(ctx).liquidGlass
 
-    /** Liquid Glass backdrop: smooth blue / teal / cyan glows (no pink, no hard edges). */
-    fun liquidBackground(ctx: Context): android.graphics.drawable.Drawable {
-        val night = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-            android.content.res.Configuration.UI_MODE_NIGHT_YES
-        return LiquidBackdrop(night)
-    }
-
-    /** Floating rounded glass pill (bottom bar). */
-    fun pill(ctx: Context): android.graphics.drawable.Drawable {
-        val dd = ctx.resources.displayMetrics.density
-        return android.graphics.drawable.GradientDrawable().apply {
-            cornerRadius = 34 * dd
-            val base = androidx.core.content.ContextCompat.getColor(ctx, R.color.card_bg)
-            setColor((base and 0x00FFFFFF) or ((if (liquid(ctx)) 0xE6 else 0xF2) shl 24))
-            val night = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                android.content.res.Configuration.UI_MODE_NIGHT_YES
-            setStroke(dd.toInt().coerceAtLeast(1), if (night) 0x33FFFFFF else 0x1F000000)
-        }
-    }
-
-    /** Card look: Liquid Glass = translucent + thin light edge, otherwise normal glass color. */
+    /** iOS card: flat rounded surface (light grey on white, dark grey on black), no outline. */
     fun styleCard(card: MaterialCardView) {
         val ctx = card.context
-        card.setCardBackgroundColor(glass(ctx, R.color.card_bg))
-        if (liquid(ctx)) {
-            val night = (ctx.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                android.content.res.Configuration.UI_MODE_NIGHT_YES
-            card.strokeColor = if (night) 0x33FFFFFF else 0x1A000000
-            card.strokeWidth = ctx.resources.displayMetrics.density.toInt().coerceAtLeast(1)
-            card.cardElevation = 0f
-        } else {
-            card.strokeColor = androidx.core.content.ContextCompat.getColor(ctx, R.color.focus_glow)
-            card.strokeWidth = 0
-        }
+        card.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.card_bg))
+        card.strokeColor = androidx.core.content.ContextCompat.getColor(ctx, R.color.focus_glow)
+        card.strokeWidth = 0
+        card.cardElevation = 0f
     }
 
     /**
@@ -170,8 +143,8 @@ object DeviceUi {
     fun glass(ctx: Context, colorRes: Int): Int {
         val c = androidx.core.content.ContextCompat.getColor(ctx, colorRes)
         val p = Prefs(ctx)
-        val t = if (p.liquidGlass) p.transparency.coerceIn(8, 18) else p.transparency
-        val alpha = (255 * (100 - t) / 100).coerceIn(150, 255) // always readable
+        val t = if (p.liquidGlass) p.transparency.coerceIn(0, 25) else p.transparency
+        val alpha = (255 * (100 - t) / 100).coerceIn(190, 255) // always readable
         return (c and 0x00FFFFFF) or (alpha shl 24)
     }
 

@@ -1,8 +1,12 @@
 package com.mbnetwork.filemanager
 
+import android.content.res.ColorStateList
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Environment
 import android.text.format.Formatter
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -10,48 +14,58 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
-import android.widget.GridLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.card.MaterialCardView
-import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/** Home: search, storage, categories with counts, recent files, quick tools. */
+/**
+ * "Browse" – same structure as the iOS Files app:
+ * large title, search + filter chips, collapsible Locations / Favorites / Tags lists.
+ */
 class HomeFragment : Fragment(), Refreshable {
 
     private val main get() = requireActivity() as MainActivity
     private lateinit var box: LinearLayout
     private val d get() = resources.displayMetrics.density
     private fun px(v: Int) = (v * d).toInt()
+    private fun color(res: Int) = ContextCompat.getColor(requireContext(), res)
+
+    companion object {
+        /** Which sections are expanded (kept while the app runs). */
+        private val open = hashMapOf("loc" to true, "fav" to true, "tag" to true)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, s: Bundle?): View {
         box = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(px(14), px(10), px(14), px(if (DeviceUi.isLarge(context)) 20 else 120))
+            setPadding(px(16), main.topInset + px(2), px(16), px(if (DeviceUi.isLarge(context)) 24 else 120))
         }
-        return ScrollView(requireContext()).apply { addView(box); isFillViewport = true }
+        return ScrollView(requireContext()).apply { addView(box); isFillViewport = true; clipToPadding = false }
     }
 
     override fun onResume() { super.onResume(); refresh() }
 
     override fun refresh() {
         if (!isAdded) return
-        main.supportActionBar?.title = getString(R.string.tab_home)
+        main.setNavMode(false)
+        main.supportActionBar?.title = ""            // the large title below replaces it
         main.supportActionBar?.subtitle = null
         box.removeAllViews()
+
         if (!PermissionHelper.hasStoragePermission(requireContext())) {
             box.addView(TextView(requireContext()).apply {
-                setText(R.string.no_permission); gravity = Gravity.CENTER; setPadding(px(20), px(60), px(20), px(20)); textSize = 16f
+                setText(R.string.no_permission); gravity = Gravity.CENTER
+                setPadding(px(20), px(80), px(20), px(20)); textSize = 16f
             })
             box.addView(com.google.android.material.button.MaterialButton(requireContext()).apply {
                 setText(R.string.grant_permission)
@@ -59,162 +73,231 @@ class HomeFragment : Fragment(), Refreshable {
             })
             return
         }
+
+        box.addView(TextView(requireContext()).apply {
+            setText(R.string.tab_home); textSize = 34f
+            setTypeface(typeface, Typeface.BOLD); setTextColor(color(R.color.label))
+            setPadding(px(4), px(2), 0, px(8))
+        })
         searchBox()
-        section(R.string.storage)
-        StorageVolumes.list(requireContext()).forEachIndexed { i, v ->
-            storageCard(v.label, v.path, if (i == 0) R.color.grad_start else if (v.usb) R.color.t_ppt else R.color.accent,
-                if (i == 0) R.drawable.ic_storage else if (v.usb) R.drawable.ic_usb else R.drawable.ic_sd)
-        }
-        section(R.string.categories)
-        categories()
-        section(R.string.recent_files)
-        recent()
-        section(R.string.tools)
-        tools()
+        chips()
+        section("loc", R.string.locations) { locations(it) }
+        section("fav", R.string.favorites) { favorites(it) }
+        section("tag", R.string.tags) { tags(it) }
     }
 
-    private fun card(content: View) = MaterialCardView(requireContext()).apply {
-        radius = 20 * d; DeviceUi.styleCard(this); cardElevation = if (DeviceUi.liquid(context)) 0f else 2 * d
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            .apply { setMargins(0, px(4), 0, px(4)) }
-        addView(content)
-        DeviceUi.applyFocusEffect(this); DeviceUi.liquidTouch(this)
-    }
-
-    private fun section(t: Int) = box.addView(TextView(requireContext()).apply {
-        setText(t); textSize = 13f; isAllCaps = true; alpha = 0.65f; setTypeface(typeface, Typeface.BOLD)
-        setPadding(px(6), px(18), px(6), px(6))
-    })
-
-    private fun tile(ic: Int, color: Int, size: Int) = ImageView(requireContext()).apply {
-        setImageResource(ic)
-        background = DeviceUi.tile(context, ContextCompat.getColor(context, color), 14f)
-        androidx.core.widget.ImageViewCompat.setImageTintList(this, android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt()))
-        val p = size / 4; setPadding(p, p, p, p)
-        layoutParams = LinearLayout.LayoutParams(size, size)
-    }
+    // ------------------------------------------------------------------ search + chips
 
     private fun searchBox() {
         val input = EditText(requireContext()).apply {
             setHint(R.string.search_files); setSingleLine(); background = null; textSize = 16f
             imeOptions = EditorInfo.IME_ACTION_SEARCH
-            setPadding(px(12), px(14), px(12), px(14))
+            setPadding(px(8), px(10), px(8), px(10))
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
         val go = {
             val q = input.text.toString().trim()
             if (q.isNotEmpty()) main.openCategory(getString(R.string.search_results, q)) { FileIndex.search(it, q) }
         }
-        input.setOnEditorActionListener { _, a, e -> if (a == EditorInfo.IME_ACTION_SEARCH || e?.keyCode == KeyEvent.KEYCODE_ENTER) { go(); true } else false }
-        box.addView(card(LinearLayout(requireContext()).apply {
-            gravity = Gravity.CENTER_VERTICAL; setPadding(px(14), 0, px(8), 0)
+        input.setOnEditorActionListener { _, a, e ->
+            if (a == EditorInfo.IME_ACTION_SEARCH || e?.keyCode == KeyEvent.KEYCODE_ENTER) { go(); true } else false
+        }
+        box.addView(LinearLayout(requireContext()).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setBackgroundResource(R.drawable.bg_search)
+            setPadding(px(12), 0, px(8), 0)
             addView(ImageView(context).apply {
-                setImageResource(android.R.drawable.ic_menu_search); alpha = 0.6f
-                layoutParams = LinearLayout.LayoutParams(px(24), px(24))
+                setImageResource(android.R.drawable.ic_menu_search); alpha = 0.55f
+                layoutParams = LinearLayout.LayoutParams(px(20), px(20))
             })
             addView(input)
-        }))
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
     }
 
-    private fun storageCard(title: String, path: String, color: Int, icon: Int) {
-        val inner = LinearLayout(requireContext()).apply {
-            gravity = Gravity.CENTER_VERTICAL; setPadding(px(16), px(14), px(16), px(14))
-            addView(tile(icon, color, px(46)))
-            addView(LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL; setPadding(px(14), 0, 0, 0)
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                addView(TextView(context).apply { text = title; textSize = 16f; setTypeface(typeface, Typeface.BOLD) })
-                try {
-                    val st = android.os.StatFs(path)
-                    val total = st.blockCountLong * st.blockSizeLong; val free = st.availableBlocksLong * st.blockSizeLong
-                    addView(LinearProgressIndicator(context).apply {
-                        progress = if (total > 0) ((total - free) * 100 / total).toInt() else 0
-                        trackCornerRadius = px(3); trackThickness = px(6)
-                        setIndicatorColor(ContextCompat.getColor(context, color)); setPadding(0, px(6), 0, px(4))
-                    })
-                    addView(TextView(context).apply {
-                        text = getString(R.string.free_of, Formatter.formatShortFileSize(context, free), Formatter.formatShortFileSize(context, total))
-                        textSize = 12f; alpha = 0.7f
-                    })
-                } catch (e: Exception) { }
+    private fun chips() {
+        val row = LinearLayout(requireContext()).apply { setPadding(0, px(10), 0, px(2)) }
+        FileIndex.categories.forEach { c ->
+            row.addView(LinearLayout(requireContext()).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundResource(R.drawable.bg_chip_ios)
+                isClickable = true; isFocusable = true
+                setPadding(px(12), px(7), px(14), px(7))
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    .apply { marginEnd = px(8) }
+                addView(ImageView(context).apply {
+                    setImageResource(c.icon)
+                    ImageViewCompat.setImageTintList(this, ColorStateList.valueOf(color(c.color)))
+                    layoutParams = LinearLayout.LayoutParams(px(16), px(16)).apply { marginEnd = px(6) }
+                })
+                addView(TextView(context).apply { setText(c.title); textSize = 13f; setTextColor(color(R.color.label)) })
+                setOnClickListener { main.openCategory(getString(c.title)) { FileIndex.list(it, c.key) } }
+                DeviceUi.applyFocusEffect(this)
             })
         }
-        box.addView(card(inner).apply { setOnClickListener { main.openLocation(path) } })
+        box.addView(HorizontalScrollView(requireContext()).apply { isHorizontalScrollBarEnabled = false; addView(row) })
     }
 
-    private fun categories() {
-        val cols = if (DeviceUi.isLarge(requireContext()) || resources.configuration.screenWidthDp > 560) 8 else 4
-        val grid = GridLayout(requireContext()).apply { columnCount = cols }
-        val ctx = requireContext().applicationContext
-        FileIndex.categories.forEach { c ->
-            val count = TextView(requireContext()).apply { text = "…"; textSize = 11f; alpha = 0.65f; gravity = Gravity.CENTER }
-            val cell = LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
-                setBackgroundResource(R.drawable.bg_icon_item); isFocusable = true; isClickable = true
-                setPadding(px(4), px(10), px(4), px(10))
-                addView(tile(c.icon, c.color, px(52)))
-                addView(TextView(context).apply { setText(c.title); textSize = 12.5f; gravity = Gravity.CENTER; setPadding(0, px(6), 0, 0); maxLines = 1 })
-                addView(count)
-                setOnClickListener { main.openCategory(getString(c.title)) { FileIndex.list(it, c.key) } }
-                DeviceUi.applyFocusEffect(this); DeviceUi.liquidTouch(this)
-                layoutParams = GridLayout.LayoutParams(GridLayout.spec(GridLayout.UNDEFINED, 1f), GridLayout.spec(GridLayout.UNDEFINED, 1f)).apply { width = 0 }
+    // ------------------------------------------------------------------ sections (collapsible)
+
+    private fun section(key: String, title: Int, build: (LinearLayout) -> Unit) {
+        val group = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_group)
+            clipToOutline = true
+            visibility = if (open[key] == true) View.VISIBLE else View.GONE
+        }
+        build(group)
+
+        val chevron = ImageView(requireContext()).apply {
+            setImageResource(R.drawable.ic_chevron_down)
+            ImageViewCompat.setImageTintList(this, ColorStateList.valueOf(color(R.color.brand)))
+            rotation = if (open[key] == true) 0f else -90f
+            layoutParams = LinearLayout.LayoutParams(px(22), px(22))
+        }
+        box.addView(LinearLayout(requireContext()).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            isClickable = true; isFocusable = true
+            setPadding(px(4), px(18), px(6), px(8))
+            addView(TextView(context).apply {
+                setText(title); textSize = 21f; setTypeface(typeface, Typeface.BOLD); setTextColor(color(R.color.label))
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            addView(chevron)
+            setOnClickListener {
+                val nowOpen = open[key] != true
+                open[key] = nowOpen
+                group.visibility = if (nowOpen) View.VISIBLE else View.GONE
+                chevron.animate().rotation(if (nowOpen) 0f else -90f).setDuration(180).start()
             }
-            grid.addView(cell)
+        })
+        box.addView(group, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+    }
+
+    private fun addRow(group: LinearLayout, row: View) {
+        if (group.childCount > 0) group.addView(View(requireContext()).apply {
+            setBackgroundColor(color(R.color.row_divider))
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { marginStart = px(60) }
+        })
+        group.addView(row)
+    }
+
+    private fun iconView(res: Int, tint: Int) = ImageView(requireContext()).apply {
+        setImageResource(res)
+        ImageViewCompat.setImageTintList(this, ColorStateList.valueOf(tint))
+        layoutParams = LinearLayout.LayoutParams(px(28), px(28))
+    }
+
+    private fun dotView(c: Int) = View(requireContext()).apply {
+        background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(c) }
+        layoutParams = LinearLayout.LayoutParams(px(16), px(16)).apply { marginStart = px(6); marginEnd = px(6) }
+    }
+
+    private fun folderIcon() = ImageView(requireContext()).apply {
+        setImageDrawable(FileIcons.drawable(FileItem("x", "x", true, 0, 0)))
+        layoutParams = LinearLayout.LayoutParams(px(30), px(30))
+    }
+
+    private fun trailingText() = TextView(requireContext()).apply {
+        textSize = 15f; setTextColor(color(R.color.text_secondary)); setPadding(0, 0, px(6), 0)
+    }
+
+    /** One iOS-style list row: icon, title (+ small subtitle), count, chevron. */
+    private fun row(lead: View, title: String, sub: String? = null, trailing: TextView? = null, onClick: () -> Unit): View {
+        val ctx = requireContext()
+        return LinearLayout(ctx).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = px(54)
+            setPadding(px(14), px(6), px(12), px(6))
+            isClickable = true; isFocusable = true
+            val tv = TypedValue(); ctx.theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+            setBackgroundResource(tv.resourceId)
+            addView(lead)
+            addView(LinearLayout(ctx).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(px(14), 0, px(8), 0)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                addView(TextView(ctx).apply { text = title; textSize = 16f; setTextColor(color(R.color.label)); maxLines = 1 })
+                if (sub != null) addView(TextView(ctx).apply { text = sub; textSize = 12f; setTextColor(color(R.color.text_secondary)); maxLines = 1 })
+            })
+            trailing?.let { addView(it) }
+            addView(ImageView(ctx).apply {
+                setImageResource(R.drawable.ic_chevron)
+                ImageViewCompat.setImageTintList(this, ColorStateList.valueOf(color(R.color.text_secondary)))
+                alpha = 0.7f
+                layoutParams = LinearLayout.LayoutParams(px(16), px(16))
+            })
+            setOnClickListener { onClick() }
+            DeviceUi.applyFocusEffect(this)
+        }
+    }
+
+    private fun freeText(path: String): String? = try {
+        val st = android.os.StatFs(path)
+        getString(R.string.free_of, Formatter.formatShortFileSize(requireContext(), st.availableBlocksLong * st.blockSizeLong),
+            Formatter.formatShortFileSize(requireContext(), st.blockCountLong * st.blockSizeLong))
+    } catch (e: Exception) { null }
+
+    // ------------------------------------------------------------------ Locations
+
+    private fun locations(group: LinearLayout) {
+        val internal = Environment.getExternalStorageDirectory().absolutePath
+        StorageVolumes.list(requireContext()).forEachIndexed { i, v ->
+            val icon = when { i == 0 -> R.drawable.ic_phone; v.usb -> R.drawable.ic_usb; else -> R.drawable.ic_sd }
+            val tint = if (i == 0) color(R.color.brand) else if (v.usb) color(R.color.t_audio) else color(R.color.brand)
+            addRow(group, row(iconView(icon, tint), v.label, freeText(v.path)) { main.openLocation(v.path) })
+        }
+        addRow(group, row(iconView(R.drawable.ic_usb, color(R.color.t_audio)), getString(R.string.usb_tools)) {
+            startActivity(android.content.Intent(requireContext(), UsbToolsActivity::class.java))
+        })
+        addRow(group, row(iconView(R.drawable.ic_zip, color(R.color.brand)), getString(R.string.obb_folder)) {
+            main.openLocation("$internal/Android/obb")
+        })
+        if (RootShell.deviceRooted) {
+            addRow(group, row(iconView(R.drawable.ic_lock, color(R.color.danger)), getString(R.string.root_fs)) { main.openLocation("/") })
+        }
+        val count = trailingText()
+        addRow(group, row(iconView(R.drawable.ic_delete, color(R.color.brand)), getString(R.string.recently_deleted), trailing = count) {
+            main.openTrash()
+        })
+        val app = requireContext().applicationContext
+        viewLifecycleOwner.lifecycleScope.launch {
+            val n = withContext(Dispatchers.IO) { runCatching { Trash.list(app).size }.getOrDefault(0) }
+            count.text = n.toString()
+        }
+    }
+
+    // ------------------------------------------------------------------ Favorites
+
+    private fun favorites(group: LinearLayout) {
+        val internal = Environment.getExternalStorageDirectory().absolutePath
+        listOf(
+            R.string.downloads to Environment.DIRECTORY_DOWNLOADS,
+            R.string.camera to Environment.DIRECTORY_DCIM,
+            R.string.pictures to Environment.DIRECTORY_PICTURES,
+            R.string.music to Environment.DIRECTORY_MUSIC,
+            R.string.videos to Environment.DIRECTORY_MOVIES,
+            R.string.documents to "Documents"
+        ).forEach { (name, dir) ->
+            val f = File(internal, dir)
+            if (!f.exists()) return@forEach
+            val count = trailingText()
+            addRow(group, row(folderIcon(), getString(name), trailing = count) { main.openLocation(f.absolutePath) })
             viewLifecycleOwner.lifecycleScope.launch {
-                val n = withContext(Dispatchers.IO) { runCatching { FileIndex.count(ctx, c.key) }.getOrDefault(0) }
+                val n = withContext(Dispatchers.IO) { f.list()?.size ?: 0 }
                 count.text = n.toString()
             }
         }
-        box.addView(card(grid.apply { setPadding(px(6), px(8), px(6), px(8)) }).apply { isFocusable = false; isClickable = false; setOnTouchListener(null) })
     }
 
-    private fun recent() {
-        val row = LinearLayout(requireContext()).apply { setPadding(px(6), px(10), px(6), px(10)) }
-        box.addView(card(HorizontalScrollView(requireContext()).apply { isHorizontalScrollBarEnabled = false; addView(row) })
-            .apply { isFocusable = false; isClickable = false; setOnTouchListener(null) })
-        val ctx = requireContext().applicationContext
-        viewLifecycleOwner.lifecycleScope.launch {
-            val items = withContext(Dispatchers.IO) { FileIndex.recent(ctx) }
-            if (items.isEmpty()) row.addView(TextView(requireContext()).apply { setText(R.string.nothing_recent); alpha = 0.6f; setPadding(px(10), px(10), px(10), px(10)) })
-            items.forEach { f ->
-                val (ic, col) = FileAdapter.typeOf(f)
-                val img = tile(ic, col, px(76))
-                if (ThumbLoader.canThumb(f.name)) ThumbLoader.load(requireContext(), f.path, img) {
-                    androidx.core.widget.ImageViewCompat.setImageTintList(img, null); img.setPadding(0, 0, 0, 0)
-                    img.scaleType = ImageView.ScaleType.CENTER_CROP
-                }
-                img.clipToOutline = true
-                row.addView(LinearLayout(requireContext()).apply {
-                    orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
-                    setBackgroundResource(R.drawable.bg_icon_item); isFocusable = true; isClickable = true
-                    setPadding(px(6), px(6), px(6), px(6))
-                    layoutParams = LinearLayout.LayoutParams(px(96), LinearLayout.LayoutParams.WRAP_CONTENT)
-                    addView(img)
-                    addView(TextView(context).apply { text = f.name; textSize = 11f; maxLines = 2; gravity = Gravity.CENTER; setPadding(0, px(4), 0, 0); ellipsize = android.text.TextUtils.TruncateAt.MIDDLE })
-                    setOnClickListener { main.openLocation(File(f.path).parent ?: return@setOnClickListener) }
-                    DeviceUi.applyFocusEffect(this)
-                })
-            }
+    // ------------------------------------------------------------------ Tags
+
+    private fun tags(group: LinearLayout) {
+        val ctx = requireContext()
+        Tags.all.forEach { t ->
+            val count = trailingText().apply { text = Tags.count(ctx, t.key).toString() }
+            addRow(group, row(dotView(t.color), getString(t.label), trailing = count) {
+                main.openCategory(getString(R.string.tag_files, getString(t.label))) { Tags.items(it, t.key) }
+            })
         }
-    }
-
-    private fun tools() {
-        val row = LinearLayout(requireContext()).apply { setPadding(px(6), px(8), px(6), px(8)) }
-        fun tool(t: Int, ic: Int, col: Int, act: () -> Unit) = row.addView(LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
-            setBackgroundResource(R.drawable.bg_icon_item); isFocusable = true; isClickable = true
-            setPadding(px(4), px(10), px(4), px(10))
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            addView(tile(ic, col, px(48)))
-            addView(TextView(context).apply { setText(t); textSize = 12.5f; gravity = Gravity.CENTER; setPadding(0, px(6), 0, 0) })
-            setOnClickListener { act() }
-            DeviceUi.applyFocusEffect(this); DeviceUi.liquidTouch(this)
-        })
-        tool(R.string.tab_apps, R.drawable.ic_apps_white, R.color.t_apk) { main.selectTab(R.id.nav_apps) }
-        tool(R.string.tab_trash, R.drawable.ic_delete, R.color.t_file) { main.selectTab(R.id.nav_trash) }
-        tool(R.string.usb_tools, R.drawable.ic_usb, R.color.t_ppt) { startActivity(android.content.Intent(requireContext(), UsbToolsActivity::class.java)) }
-        tool(R.string.appearance, R.drawable.ic_tune, R.color.grad_mid) { DeviceUi.chooseTheme(requireActivity(), main.prefs) }
-        tool(R.string.check_updates, R.drawable.ic_open, R.color.accent) { main.checkUpdates() }
-        box.addView(card(row).apply { isFocusable = false; isClickable = false; setOnTouchListener(null) })
     }
 }

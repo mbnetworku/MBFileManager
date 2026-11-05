@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.mbnetwork.filemanager.GlassView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/sheetRoot"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@drawable/bg_sheet">
+    android:layout_height="wrap_content">
+
+<androidx.core.widget.NestedScrollView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -111,3 +114,4 @@
             android:orientation="vertical" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+</com.mbnetwork.filemanager.GlassView>

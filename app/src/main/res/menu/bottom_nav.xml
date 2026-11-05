@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/nav_home" android:icon="@drawable/ic_home" android:title="@string/tab_home" />
-    <item android:id="@+id/nav_files" android:icon="@drawable/ic_files_tab" android:title="@string/tab_files" />
+    <item android:id="@+id/nav_recents" android:icon="@drawable/ic_clock" android:title="@string/tab_recents" />
+    <item android:id="@+id/nav_home" android:icon="@drawable/ic_files_tab" android:title="@string/tab_home" />
     <item android:id="@+id/nav_apps" android:icon="@drawable/ic_apps" android:title="@string/tab_apps" />
-    <item android:id="@+id/nav_trash" android:icon="@drawable/ic_trash" android:title="@string/tab_trash" />
 </menu>

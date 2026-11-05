@@ -20,22 +20,21 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
 
     fun build() {
         box.removeAllViews()
-        // glossy header
+        // header: app icon + name (iOS large title style)
         box.addView(LinearLayout(act).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.bg_glossy)
-            setPadding(px(20), px(36), px(20), px(20))
+            setPadding(px(20), px(28), px(20), px(10))
             addView(ImageView(act).apply {
-                setImageResource(R.drawable.ic_launcher)
-                layoutParams = LinearLayout.LayoutParams(px(52), px(52))
+                setImageResource(R.mipmap.ic_launcher)
+                layoutParams = LinearLayout.LayoutParams(px(56), px(56))
             })
             addView(TextView(act).apply {
-                setText(R.string.app_name); setTextColor(0xFFFFFFFF.toInt()); textSize = 20f
+                setText(R.string.app_name); setTextColor(ContextCompat.getColor(act, R.color.label)); textSize = 24f
                 setTypeface(typeface, Typeface.BOLD); setPadding(0, px(10), 0, 0)
             })
             addView(TextView(act).apply {
                 text = act.getString(R.string.version_label, BuildConfig.VERSION_NAME)
-                setTextColor(0xCCFFFFFF.toInt()); textSize = 13f
+                setTextColor(ContextCompat.getColor(act, R.color.text_secondary)); textSize = 13f
             })
         })
 

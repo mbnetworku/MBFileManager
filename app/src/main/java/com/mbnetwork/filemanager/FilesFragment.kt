@@ -67,6 +67,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private var limitPath = internalRoot
     private var currentPath = internalRoot
 
+    /** Recents tab: the category list is the root of the tab (Back does not leave it). */
+    private var pinned = false
     private var virtualTitle: String? = null
     private var virtualLoader: ((android.content.Context) -> List<FileItem>)? = null
 
@@ -85,7 +87,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private val backCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() = when {
             adapter.selectionMode -> exitSelect()
-            virtualTitle != null -> closeCategory()
+            virtualTitle != null && !pinned ->
+                if (parentFragmentManager.backStackEntryCount > 0) parentFragmentManager.popBackStack() else closeCategory()
             else -> goUp()
         }
     }
@@ -106,6 +109,18 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         recycler = view.findViewById(R.id.list)
         selectBar = view.findViewById(R.id.selectBar)
         setupList()
+        // phones: the list scrolls UNDER the glass top bar (start it just below the bar)
+        if (main.topInset > 0) {
+            val dd0 = resources.displayMetrics.density
+            recycler.setPadding(recycler.paddingLeft, main.topInset + (6 * dd0).toInt(), recycler.paddingRight, recycler.paddingBottom)
+            swipe.setProgressViewOffset(false, main.topInset, main.topInset + (64 * dd0).toInt())
+        }
+        // multi-select bar = Liquid Glass; icons in iOS blue
+        (selectBar as GlassView).setup(swipe, radiusDp = 26f, tintAlpha = 0.66f)
+        val selTint = android.content.res.ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.brand))
+        listOf(R.id.selShare, R.id.selCopy, R.id.selMove, R.id.selZip, R.id.selDelete, R.id.selMore).forEach {
+            androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(view.findViewById<TextView>(it), selTint)
+        }
         // The storage card is not shown in Files (it lives on the Home screen)
         view.findViewById<View>(R.id.appBar).visibility = View.GONE
         // Landscape / short screens: compact header (no usage bar)
@@ -117,7 +132,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (!DeviceUi.isLarge(requireContext())) {
             val dd = resources.displayMetrics.density
             (fab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = (104 * dd).toInt()
-            (selectBar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = (100 * dd).toInt()
+            (selectBar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin = (14 * dd).toInt()
             recycler.setPadding(recycler.paddingLeft, recycler.paddingTop, recycler.paddingRight, (180 * dd).toInt())
         }
         view.findViewById<View>(R.id.selShare).setOnClickListener { shareMany(adapter.selectedItems()) }
@@ -141,6 +156,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
         main.pendingLocation?.let { main.pendingLocation = null; view.post { openLocation(it) } }
         main.pendingCategory?.let { (t, l) -> main.pendingCategory = null; virtualTitle = t; virtualLoader = l }
+        pinned = main.pendingPinned; main.pendingPinned = false
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -154,7 +170,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         rootBanner.visibility = if (main.rootActive) View.VISIBLE else View.GONE
         if (!main.rootActive && limitPath == "/") { limitPath = internalRoot; currentPath = internalRoot }
         main.supportActionBar?.title = when {
-            adapter.selectionMode -> getString(R.string.n_selected, adapter.selected.size)
+            adapter.selectionMode -> selectionTitle()
             virtualTitle != null -> virtualTitle
             currentPath == internalRoot -> getString(R.string.internal_storage)
             currentPath == limitPath -> StorageVolumes.list(requireContext()).firstOrNull { it.path == currentPath }?.label ?: File(currentPath).name
@@ -163,7 +179,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         main.supportActionBar?.subtitle = if (virtualTitle != null || currentPath == limitPath) null
             else File(currentPath).parent?.replace(internalRoot, getString(R.string.internal_storage))
         updateHeader()
-        backCallback.isEnabled = currentPath != limitPath || adapter.selectionMode || virtualTitle != null
+        backCallback.isEnabled = currentPath != limitPath || adapter.selectionMode || (virtualTitle != null && !pinned)
+        updateNav()
         updateFab()
         virtualLoader?.let { loader ->
             swipe.isRefreshing = true
@@ -229,9 +246,20 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private fun updateFab() {
         fab.setIconResource(if (clip != null) R.drawable.ic_paste else R.drawable.ic_new_folder)
         fab.text = getString(if (clip != null) R.string.paste else R.string.new_folder)
+        fab.visibility = if (adapter.selectionMode || virtualTitle != null) View.GONE else View.VISIBLE
     }
 
     /** Glossy header: storage name, usage bar and tappable breadcrumb chips. */
+    private fun selectionTitle() =
+        if (adapter.selected.isEmpty()) getString(R.string.select_items) else getString(R.string.n_selected, adapter.selected.size)
+
+    /** Back arrow when inside a folder / pushed from Browse, sidebar button otherwise (iOS Files header). */
+    private fun updateNav() {
+        val pushed = parentFragmentManager.backStackEntryCount > 0
+        val back = !adapter.selectionMode && (if (virtualTitle != null) !pinned else (pushed || currentPath != limitPath))
+        main.setNavMode(back) { requireActivity().onBackPressedDispatcher.onBackPressed() }
+    }
+
     private fun updateHeader() {
         headerTitle.text = when {
             limitPath == "/" -> getString(R.string.root_fs)
@@ -381,9 +409,11 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private fun updateSelectionUi() {
         val on = adapter.selectionMode
         selectBar.visibility = if (on) View.VISIBLE else View.GONE
-        fab.visibility = if (on) View.GONE else View.VISIBLE
-        backCallback.isEnabled = on || currentPath != limitPath
-        main.supportActionBar?.title = if (on) getString(R.string.n_selected, adapter.selected.size)
+        fab.visibility = if (on || virtualTitle != null) View.GONE else View.VISIBLE
+        main.setTabBarVisible(!on)                     // the batch toolbar replaces the tab bar
+        updateNav()
+        backCallback.isEnabled = on || (virtualTitle != null && !pinned) || currentPath != limitPath
+        main.supportActionBar?.title = if (on) selectionTitle()
             else virtualTitle ?: File(currentPath).name.ifEmpty { "/" }
         listOf(R.id.selShare, R.id.selCopy, R.id.selMove, R.id.selZip, R.id.selDelete, R.id.selMore).forEach {
             selectBar.findViewById<View>(it).alpha = if (adapter.selected.isEmpty()) 0.4f else 1f
@@ -451,22 +481,21 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         val ctx = requireContext()
         val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(ctx, R.style.ThemeOverlay_MBFileManager_Sheet)
         val v = layoutInflater.inflate(R.layout.sheet_actions, null)
-        v.background?.mutate()?.alpha = (255 * (100 - prefs.transparency) / 100).coerceIn(215, 255)
+        // Liquid Glass sheet: blurs the screen behind it
+        (v as GlassView).setup(requireActivity().window.decorView, radiusDp = 32f, shape = GlassView.SHAPE_TOP, tintAlpha = 0.74f)
         sheet.setContentView(v)
         val single = items.singleOrNull()
         val d = resources.displayMetrics.density
 
         // header
         val icon = v.findViewById<ImageView>(R.id.sheetIcon)
-        val (ic, col) = FileAdapter.typeOf(items[0])
-        icon.setImageResource(ic)
-        androidx.core.widget.ImageViewCompat.setImageTintList(icon, android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt()))
-        icon.background = DeviceUi.tile(ctx, ContextCompat.getColor(ctx, col))
-        val pad = (10 * d).toInt(); icon.setPadding(pad, pad, pad, pad)
-        icon.clipToOutline = true
-        if (ThumbLoader.canThumb(items[0].name)) ThumbLoader.load(ctx, items[0].path, icon) {
-            androidx.core.widget.ImageViewCompat.setImageTintList(icon, null); icon.setPadding(0, 0, 0, 0)
+        icon.background = null
+        icon.scaleType = ImageView.ScaleType.FIT_CENTER
+        icon.setImageDrawable(FileIcons.drawable(if (items.size == 1) items[0] else FileItem("", "", true, 0, 0)))
+        if (items.size == 1 && ThumbLoader.canThumb(items[0].name)) ThumbLoader.load(ctx, items[0].path, icon) {
             icon.scaleType = ImageView.ScaleType.CENTER_CROP
+            icon.setBackgroundResource(R.drawable.bg_thumb_win)
+            icon.clipToOutline = true
         }
         v.findViewById<TextView>(R.id.sheetTitle).text = single?.name ?: getString(R.string.n_items, items.size)
         val sub = v.findViewById<TextView>(R.id.sheetSub)
@@ -534,6 +563,34 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         val g1 = v.findViewById<LinearLayout>(R.id.group1)
         val g2 = v.findViewById<LinearLayout>(R.id.group2)
         val g3 = v.findViewById<LinearLayout>(R.id.group3)
+        if (single != null) {
+            val cur = Tags.get(ctx, single.path)
+            g1.addView(LinearLayout(ctx).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                minimumHeight = (52 * d).toInt()
+                setPadding((16 * d).toInt(), 0, (12 * d).toInt(), 0)
+                addView(TextView(ctx).apply {
+                    setText(R.string.tags); textSize = 16f
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                })
+                Tags.all.forEach { t ->
+                    addView(View(ctx).apply {
+                        background = android.graphics.drawable.GradientDrawable().apply {
+                            shape = android.graphics.drawable.GradientDrawable.OVAL
+                            setColor(t.color)
+                            if (cur == t.key) setStroke((3 * d).toInt(), ContextCompat.getColor(ctx, R.color.label))
+                        }
+                        alpha = if (cur == null || cur == t.key) 1f else 0.4f
+                        contentDescription = getString(t.label)
+                        layoutParams = LinearLayout.LayoutParams((28 * d).toInt(), (28 * d).toInt()).apply { marginStart = (12 * d).toInt() }
+                        setOnClickListener {
+                            Tags.set(ctx, single.path, if (cur == t.key) null else t.key)
+                            sheet.dismiss(); refresh()
+                        }
+                    })
+                }
+            })
+        }
         if (single != null && !single.isDir) {
             when {
                 ApkInstaller.isApk(single.name) -> {
@@ -741,11 +798,11 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     /** Called from the sidebar. */
     fun openLocation(path: String) {
         if (adapter.selectionMode) exitSelect()
-        virtualTitle = null; virtualLoader = null
+        virtualTitle = null; virtualLoader = null; pinned = false
         when {
             path == "/" -> if (main.rootActive) { limitPath = "/"; navigate("/") }
                 else main.setRootMode(true) { ok -> if (ok) { limitPath = "/"; navigate("/") } }
-            path.startsWith("$internalRoot/") -> { limitPath = internalRoot; navigate(path) }
+            path.startsWith("$internalRoot/") -> { limitPath = path; navigate(path) }
             else -> { limitPath = path; navigate(path) }
         }
     }
@@ -780,11 +837,16 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
 
     override fun onPrepareMenu(menu: Menu) {
         val sel = adapter.selectionMode
+        val all = adapter.items.isNotEmpty() && adapter.selected.size == adapter.items.size
         menu.findItem(R.id.action_select_all).isVisible = sel
+        menu.findItem(R.id.action_select_all).setTitle(if (all) R.string.deselect_all else R.string.select_all)
         menu.findItem(R.id.action_done).isVisible = sel
-        listOf(R.id.action_select, R.id.action_up).forEach { menu.findItem(it).isVisible = !sel }
-        menu.findItem(R.id.action_storage).isVisible = false // storage lives in the sidebar now
-        menu.findItem(R.id.action_view).setTitle(if (prefs.viewMode == 0) R.string.view_list else R.string.view_icons)
+        listOf(R.id.action_select, R.id.action_new_folder, R.id.action_view_icons, R.id.action_view_list, R.id.action_columns,
+            R.id.action_sort, R.id.action_hidden, R.id.action_new_file, R.id.action_refresh, R.id.action_theme)
+            .forEach { menu.findItem(it).isVisible = !sel }
+        menu.findItem(R.id.action_new_folder).isVisible = !sel && virtualTitle == null
+        menu.findItem(R.id.action_view_icons).isChecked = prefs.viewMode == 0
+        menu.findItem(R.id.action_view_list).isChecked = prefs.viewMode == 1
         menu.findItem(R.id.action_root).isVisible = RootShell.deviceRooted && !sel  // hidden on non-rooted devices
         menu.findItem(R.id.action_root).isChecked = main.rootActive
         menu.findItem(R.id.action_hidden).isChecked = prefs.showHidden
@@ -792,13 +854,16 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.action_up -> goUp()
             R.id.action_select -> enterSelect()
+            R.id.action_new_folder -> promptName(R.string.new_folder) { ops.mkdir(currentPath, it) }
             R.id.action_columns -> chooseColumns()
-            R.id.action_select_all -> { adapter.selectAll(); updateSelectionUi() }
+            R.id.action_select_all -> {
+                if (adapter.items.isNotEmpty() && adapter.selected.size == adapter.items.size) adapter.clearSelection() else adapter.selectAll()
+                updateSelectionUi()
+            }
             R.id.action_done -> exitSelect()
-            R.id.action_view -> { prefs.viewMode = if (prefs.viewMode == 0) 1 else 0; setupList(); requireActivity().invalidateOptionsMenu() }
-            R.id.action_storage -> main.openDrawer()
+            R.id.action_view_icons -> { prefs.viewMode = 0; setupList(); requireActivity().invalidateOptionsMenu() }
+            R.id.action_view_list -> { prefs.viewMode = 1; setupList(); requireActivity().invalidateOptionsMenu() }
             R.id.action_root -> main.setRootMode(!main.rootActive) { ok ->
                 if (ok) { limitPath = "/" } else { limitPath = internalRoot; currentPath = internalRoot }
                 requireActivity().invalidateOptionsMenu(); refresh()

@@ -25,8 +25,8 @@ class Prefs(context: Context) {
         get() = sp.getInt("transparency", 15)
         set(v) = sp.edit().putInt("transparency", v).apply()
     var liquidGlass: Boolean
-        get() = sp.getBoolean("liquid", false)
-        set(v) = sp.edit().putBoolean("liquid", v).apply()
+        get() = sp.getBoolean("liquid2", true)
+        set(v) = sp.edit().putBoolean("liquid2", v).apply()
     /** Icon view columns: 0 = auto */
     var iconColumns: Int
         get() = sp.getInt("iconCols", 0)

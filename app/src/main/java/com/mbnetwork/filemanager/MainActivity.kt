@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var prefs: Prefs
         private set
     private lateinit var drawer: DrawerLayout
+    private lateinit var toggle: androidx.appcompat.app.ActionBarDrawerToggle
     private lateinit var sidebar: Sidebar
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var railNav: NavigationRailView
@@ -30,6 +31,9 @@ class MainActivity : AppCompatActivity() {
         override fun handleOnBackPressed() = closeDrawer()
     }
     private var currentTab = R.id.nav_home
+    /** Space (px) the screen must leave at the top because the glass bar floats over it (0 on tablet / TV). */
+    var topInset = 0
+        private set
 
     override fun onCreate(savedInstanceState: Bundle?) {
         prefs = Prefs(this)
@@ -38,23 +42,31 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
+        toolbar.overflowIcon = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.ic_more_circle)
 
-        // Liquid Glass: soft colored backdrop behind translucent surfaces
-        if (DeviceUi.liquid(this)) {
-            window.setBackgroundDrawable(DeviceUi.liquidBackground(this))
-            toolbar.background?.mutate()?.alpha = 200
-        }
+        // iOS look: transparent status bar, dark/light icons follow the theme
+        val night = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        androidx.core.view.WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !night
+
+        // Liquid Glass bars: the screen scrolls UNDER the top bar and the floating tab bar and is blurred there
+        val container = findViewById<View>(R.id.container)
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(android.R.attr.actionBarSize, tv, true)
+        val barPx = android.util.TypedValue.complexToDimensionPixelSize(tv.data, resources.displayMetrics)
+        val bigScreen = DeviceUi.isLarge(this)
+        topInset = if (bigScreen) 0 else barPx                 // phones: content starts under the glass bar
+        if (bigScreen) findViewById<View>(R.id.row).setPadding(0, barPx, 0, 0)  // tablet / TV: content starts below it
+        findViewById<GlassView>(R.id.topGlass).setup(container, shape = GlassView.SHAPE_NONE, rim = GlassView.RIM_BOTTOM, tintAlpha = 0.62f)
+        findViewById<GlassView>(R.id.bottomGlass).setup(container, capsule = true, tintAlpha = 0.58f)
+        findViewById<GlassView>(R.id.drawerPanel).setup(findViewById(R.id.root), radiusDp = 28f, tintAlpha = 0.80f)
 
         // Sidebar (hidden until opened with the ☰ button or a swipe from the left edge)
         drawer = findViewById(R.id.drawer)
         sidebar = Sidebar(this, findViewById(R.id.drawerContent))
-        // Sidebar must always be readable: (almost) solid panel; content behind gets dimmed / blurred.
-        val panelColor = androidx.core.content.ContextCompat.getColor(this, R.color.sheet_bg)
-        findViewById<View>(R.id.drawerPanel).setBackgroundColor(
-            if (DeviceUi.liquid(this) && android.os.Build.VERSION.SDK_INT >= 31) (panelColor and 0x00FFFFFF) or (0xE6 shl 24) else panelColor)
-        drawer.setScrimColor(0x99000000.toInt())
+        drawer.setScrimColor(0x66000000)
         val mainContent = drawer.getChildAt(0)
-        val toggle = androidx.appcompat.app.ActionBarDrawerToggle(this, drawer, toolbar, R.string.drawer_open, R.string.drawer_close)
+        toggle = androidx.appcompat.app.ActionBarDrawerToggle(this, drawer, toolbar, R.string.drawer_open, R.string.drawer_close)
         drawer.addDrawerListener(toggle)
         toggle.syncState()
         drawer.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
@@ -75,37 +87,48 @@ class MainActivity : AppCompatActivity() {
 
         // Phone: bottom bar. Tablet / Android TV: side rail.
         val bottom = findViewById<BottomNavigationView>(R.id.bottomNav)
+        val bottomGlass = findViewById<GlassView>(R.id.bottomGlass)
         val rail = findViewById<NavigationRailView>(R.id.navRail)
         val large = DeviceUi.isLarge(this)
-        bottom.visibility = if (large) View.GONE else View.VISIBLE
+        bottomGlass.visibility = if (large) View.GONE else View.VISIBLE
         rail.visibility = if (large) View.VISIBLE else View.GONE
         val listener = NavigationBarView.OnItemSelectedListener {
             if (it.itemId != currentTab) {
                 currentTab = it.itemId
-                show(when (it.itemId) { R.id.nav_home -> HomeFragment(); R.id.nav_apps -> AppsFragment(); R.id.nav_trash -> TrashFragment(); else -> FilesFragment() })
+                popToRoot()
+                when (it.itemId) {
+                    R.id.nav_recents -> {
+                        pendingCategory = getString(R.string.tab_recents) to { c: android.content.Context -> FileIndex.recent(c, 100) }
+                        pendingPinned = true
+                        show(FilesFragment())
+                    }
+                    R.id.nav_apps -> show(AppsFragment())
+                    else -> show(HomeFragment())
+                }
             }
             true
         }
-        // landscape: keep the pill compact and centered
-        if (resources.configuration.screenWidthDp > 560) (bottom.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
+        val reselected = NavigationBarView.OnItemReselectedListener { popToRoot() }
+        // landscape: keep the capsule compact and centered
+        if (resources.configuration.screenWidthDp > 560) (bottomGlass.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
             width = (440 * resources.displayMetrics.density).toInt()
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL
             bottomMargin = (8 * resources.displayMetrics.density).toInt()
         }
-        // floating rounded glass pill, brand blue selection (no purple)
-        bottom.background = DeviceUi.pill(this)
-        bottom.outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
-        bottom.clipToOutline = true
+        // the glass capsule is the background; iOS blue for the selected tab
+        bottom.background = null
         val sel = android.content.res.ColorStateList(
             arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-            intArrayOf(androidx.core.content.ContextCompat.getColor(this, R.color.grad_start),
+            intArrayOf(androidx.core.content.ContextCompat.getColor(this, R.color.brand),
                 androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary)))
         bottom.itemIconTintList = sel; bottom.itemTextColor = sel
         rail.itemIconTintList = sel; rail.itemTextColor = sel
         rail.setBackgroundColor(DeviceUi.glass(this, R.color.card_bg))
         bottomNav = bottom; railNav = rail
-        bottom.setOnItemSelectedListener(listener)
-        rail.setOnItemSelectedListener(listener)
+        bottom.selectedItemId = R.id.nav_home          // start on Browse
+        rail.selectedItemId = R.id.nav_home
+        bottom.setOnItemSelectedListener(listener); bottom.setOnItemReselectedListener(reselected)
+        rail.setOnItemSelectedListener(listener); rail.setOnItemReselectedListener(reselected)
         if (savedInstanceState == null) show(HomeFragment()) // start on the Home screen
 
         // Ask for storage permission only if this Android version needs it and it is missing.
@@ -195,29 +218,70 @@ class MainActivity : AppCompatActivity() {
 
     fun selectTab(id: Int) {
         closeDrawer()
-        if (DeviceUi.isLarge(this)) railNav.selectedItemId = id else bottomNav.selectedItemId = id
+        if (id == R.id.nav_trash) { openTrash(); return }
+        val nav = if (DeviceUi.isLarge(this)) railNav else bottomNav
+        if (nav.selectedItemId == id) popToRoot() else nav.selectedItemId = id
     }
 
-    /** Category / search result shown in the Files tab. */
+    private fun popToRoot() {
+        supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+    }
+
+    /** Back arrow (folder screens) or the sidebar button (Browse / Apps), like the iOS Files header. */
+    fun setNavMode(back: Boolean, onBack: (() -> Unit)? = null) {
+        if (back) {
+            toggle.isDrawerIndicatorEnabled = false
+            toggle.setHomeAsUpIndicator(androidx.core.content.ContextCompat.getDrawable(this, R.drawable.ic_back))
+            toggle.setToolbarNavigationClickListener { onBack?.invoke() }
+        } else {
+            toggle.isDrawerIndicatorEnabled = true
+        }
+    }
+
+    /** During Select mode the tab bar makes room for the batch toolbar (iOS behaviour). */
+    fun setTabBarVisible(visible: Boolean) {
+        if (DeviceUi.isLarge(this)) return
+        val g = findViewById<View>(R.id.bottomGlass)
+        g.animate().cancel()
+        if (visible) {
+            g.visibility = View.VISIBLE
+            g.animate().alpha(1f).translationY(0f).setDuration(200).start()
+        } else {
+            g.animate().alpha(0f).translationY(g.height.toFloat()).setDuration(200)
+                .withEndAction { g.visibility = View.INVISIBLE }.start()
+        }
+    }
+
+    /** Category / search result shown in a folder screen. */
     var pendingCategory: Pair<String, (android.content.Context) -> List<FileItem>>? = null
+    /** true = the list is the root of a tab (Recents): Back does not leave it. */
+    var pendingPinned = false
 
     fun openCategory(title: String, loader: (android.content.Context) -> List<FileItem>) {
         closeDrawer()
         val f = currentFragment()
         if (f is FilesFragment) f.openCategory(title, loader)
-        else { pendingCategory = title to loader; selectTab(R.id.nav_files) }
+        else { pendingCategory = title to loader; show(FilesFragment(), push = true) }
     }
 
-    /** Sidebar: open a folder in the Files tab. */
+    /** Open a folder (sidebar / Browse list). */
     fun openLocation(path: String) {
         closeDrawer()
         val f = currentFragment()
         if (f is FilesFragment) f.openLocation(path)
-        else { pendingLocation = path; selectTab(R.id.nav_files) }
+        else { pendingLocation = path; show(FilesFragment(), push = true) }
     }
 
-    private fun show(f: Fragment) {
-        supportFragmentManager.beginTransaction().replace(R.id.container, f).commit()
+    fun openTrash() {
+        closeDrawer()
+        show(TrashFragment(), push = true)
+    }
+
+    private fun show(f: Fragment, push: Boolean = false) {
+        val t = supportFragmentManager.beginTransaction()
+        t.replace(R.id.container, f)
+        if (push) t.addToBackStack(null)
+        t.commit()
     }
 
     private fun currentFragment() = supportFragmentManager.findFragmentById(R.id.container)
