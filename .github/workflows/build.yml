@@ -65,3 +65,7 @@ jobs:
           body: |
             MB File Manager for Android 5.0+.
             Download the APK below and install it on your phone.
+      - name: Android 5 (API 21) compatibility check - lint NewApi (report only, runs when the commit message contains [lint])
+        if: contains(github.event.head_commit.message, '[lint]')
+        continue-on-error: true
+        run: ./gradlew --no-daemon lintRelease

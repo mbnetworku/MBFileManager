@@ -193,6 +193,9 @@ rename label, quick-format as FAT32 (`FatFormatter`, MBR; wipes GPT) and merge p
 
 ---
 
+* **Android 5 check:** a commit message containing `[lint]` makes CI run `lintRelease` with only `NewApi` enabled and prints every call
+  that needs an Android version newer than 5.0 (report only, does not block the release). Run it after adding platform APIs.
+
 ## 9. Known limits
 
 * Tags are tied to the file path (lost when the file is moved or renamed).

@@ -53,6 +53,10 @@ android {
         // MANAGE_EXTERNAL_STORAGE / QUERY_ALL_PACKAGES are intentional for a file & app manager.
         abortOnError = false
         checkReleaseBuilds = false
+        // used by the optional CI step "Android 5 compatibility" (report only)
+        checkOnly += "NewApi"
+        textReport = true
+        textOutput = file("stdout")
     }
     kotlinOptions {
         jvmTarget = "17"
