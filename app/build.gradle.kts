@@ -11,8 +11,8 @@ android {
         applicationId = "com.mbnetwork.filemanager"
         minSdk = 21          // Android 5.0 Lollipop
         targetSdk = 34
-        versionCode = 41
-        versionName = "2.9.0.021"
+        versionCode = 42
+        versionName = "2.9.0.022"
     }
 
     // One fixed key for every build, so new versions install as UPDATES over old ones.
@@ -61,6 +61,14 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+// two copies of BouncyCastle (jdk15to18 and jdk18on) come in through jcifs-ng / pdfbox; keep only the newer one
+configurations.all {
+    exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
+    exclude(group = "org.bouncycastle", module = "bcpkix-jdk15to18")
+    exclude(group = "org.bouncycastle", module = "bcutil-jdk15to18")
+    exclude(group = "org.bouncycastle", module = "bcprov-jdk15on")
 }
 
 dependencies {
