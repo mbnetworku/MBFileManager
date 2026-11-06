@@ -1,3 +1,5 @@
+## 2.9.0.028
+- Fixed: Google Drive, OneDrive and Dropbox sign-in. It now works through the official cloud apps on your phone (normal sign-in, personal and Microsoft 365 accounts) - no keys needed.
 ## 2.9.0.027
 - Cloud: normal sign-in for Google Drive, OneDrive (personal and Microsoft 365) and Dropbox - no keys to type.
 - New: after you edit a file from a server or cloud account, the app offers to save it back.

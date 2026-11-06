@@ -395,4 +395,7 @@
     <string name="advanced">Advanced</string>
     <string name="save_back_q">You changed this file. Save it back to %1$s?</string>
     <string name="save_back">Save back</string>
+    <string name="cloud_storage">Cloud storage</string>
+    <string name="saf_message">Sign in the normal way with the official %1$s app on this phone (personal or Microsoft 365 work accounts). In the next window open the menu (≡), choose %2$s, then tap "Use this folder". If it is not in the list, install the official app from Google Play and sign in there once.</string>
+    <string name="saf_continue">Continue</string>
 </resources>

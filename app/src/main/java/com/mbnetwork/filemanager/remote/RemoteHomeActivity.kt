@@ -29,6 +29,19 @@ import java.util.UUID
 class RemoteHomeActivity : AppCompatActivity() {
 
     private lateinit var list: LinearLayout
+    private var wanted: OAuth.Provider? = null
+
+    /** The system folder picker; the phone's cloud apps (Google Drive, OneDrive, Dropbox) appear in it. */
+    private val pickCloud = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        } catch (e: Throwable) { }
+        val kind = FsSaf.providerOf(uri)
+        val title = OAuth.all.firstOrNull { it.id == kind }?.title ?: getString(R.string.cloud_storage)
+        val c = Conn(UUID.randomUUID().toString(), "saf", title, uri.toString(), 0, "", "", kind)
+        ConnStore.save(this, c); render(); open(c)
+    }
     private val d by lazy { resources.displayMetrics.density }
     private fun dp(v: Int) = (v * d).toInt()
     private fun col(r: Int) = ContextCompat.getColor(this, r)
@@ -87,7 +100,7 @@ class RemoteHomeActivity : AppCompatActivity() {
         val conns = ConnStore.all(this)
 
         header(getString(R.string.local_network))
-        conns.filter { !it.isCloud }.forEach { c ->
+        conns.filter { !it.isCloud && !it.isSaf }.forEach { c ->
             row(R.drawable.ic_cloud, col(R.color.brand), c.name, "${ConnType.title(c.type)} · ${c.host}",
                 { open(c) }, { manage(c) })
         }
@@ -96,18 +109,16 @@ class RemoteHomeActivity : AppCompatActivity() {
 
         header(getString(R.string.cloud))
         for (p in OAuth.all) {
-            val mine = conns.filter { it.type == p.id }
+            val mine = conns.filter { it.type == p.id || (it.isSaf && it.path == p.id) }
             if (mine.isEmpty()) {
                 val has = OAuth.clientId(this, p).isNotEmpty()
-                row(R.drawable.ic_cloud, col(R.color.t_doc), p.title, getString(if (has) R.string.tap_sign_in else R.string.not_set_up),
+                row(R.drawable.ic_cloud, col(R.color.t_doc), p.title, getString(R.string.tap_sign_in),
                     { connectCloud(p) }, if (OAuth.builtIn(p)) null else ({ keysDialog(p) {} }))
             } else mine.forEach { c ->
                 row(R.drawable.ic_cloud, col(R.color.t_doc), c.name, getString(R.string.connected), { open(c) }, { manage(c) })
             }
         }
-        if (OAuth.all.any { !OAuth.builtIn(it) }) row(R.drawable.ic_info, col(R.color.text_secondary), getString(R.string.cloud_help), getString(R.string.cloud_help_sub), {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mbnetworku/MBFileManager/blob/main/docs/CLOUD_SETUP.md")))
-        })
+        conns.filter { it.isSaf && it.path == "other" }.forEach { c -> row(R.drawable.ic_cloud, col(R.color.t_doc), c.name, getString(R.string.connected), { open(c) }, { manage(c) }) }
         if (!Secrets.available()) list.addView(TextView(this).apply {
             text = getString(R.string.old_android_note); textSize = 12f; setTextColor(col(R.color.text_secondary)); setPadding(dp(8), dp(10), dp(8), 0)
         })
@@ -120,11 +131,15 @@ class RemoteHomeActivity : AppCompatActivity() {
     private fun manage(c: Conn) {
         val items = ArrayList<String>(); val acts = ArrayList<() -> Unit>()
         items += getString(R.string.open); acts += { open(c) }
-        if (!c.isCloud) { items += getString(R.string.edit); acts += { form(c.type, c, null) } }
+        if (c.isSaf) { /* nothing to edit: just open or remove */ }
+        else if (!c.isCloud) { items += getString(R.string.edit); acts += { form(c.type, c, null) } }
         else if (OAuth.all.firstOrNull { it.id == c.type }?.let { !OAuth.builtIn(it) } == true) {
             items += getString(R.string.change_keys); acts += { OAuth.all.firstOrNull { it.id == c.type }?.let { keysDialog(it) {} } }
         }
-        items += getString(if (c.isCloud) R.string.sign_out else R.string.remove); acts += {
+        items += getString(if (c.isCloud || c.isSaf) R.string.sign_out else R.string.remove); acts += {
+            if (c.isSaf) try {
+                contentResolver.releasePersistableUriPermission(Uri.parse(c.host), Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            } catch (e: Throwable) { }
             ConnStore.remove(this, c.id); render()
         }
         MaterialAlertDialogBuilder(this).setTitle(c.name).setItems(items.toTypedArray()) { _, i -> acts[i]() }.show()
@@ -133,12 +148,16 @@ class RemoteHomeActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ cloud
 
     private fun connectCloud(p: OAuth.Provider) {
-        when {
-            OAuth.clientId(this, p).isNotEmpty() -> signIn(p)
-            else -> MaterialAlertDialogBuilder(this).setTitle(p.title).setMessage(R.string.not_set_up_msg)
-                .setPositiveButton(R.string.ok, null)
-                .setNeutralButton(R.string.advanced) { _, _ -> keysDialog(p) { signIn(p) } }.show()
-        }
+        if (OAuth.clientId(this, p).isNotEmpty()) { signIn(p); return }
+        // No developer keys in this build: sign in through the official cloud app on the phone (normal sign-in, no keys).
+        wanted = p
+        MaterialAlertDialogBuilder(this).setTitle(p.title)
+            .setMessage(getString(R.string.saf_message, p.title, p.title))
+            .setPositiveButton(R.string.saf_continue) { _, _ ->
+                try { pickCloud.launch(null) } catch (e: Throwable) { Toast.makeText(this, R.string.no_app_for_file, Toast.LENGTH_LONG).show() }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .setNeutralButton(R.string.advanced) { _, _ -> keysDialog(p) { signIn(p) } }.show()
     }
 
     private fun signIn(p: OAuth.Provider) {

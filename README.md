@@ -88,10 +88,9 @@ Smooth slide / fade between screens, list items that rise in, a selection toolba
 
 ### 🌐 Network & cloud (Browse → *Network & cloud*)
 - **Local network**: Windows shares (**SMB**), **FTP / FTPS**, **SFTP**, **WebDAV** (NAS, Nextcloud, ownCloud). *Find devices on this Wi-Fi* scans for PCs and NAS boxes.
-- **Cloud accounts**: **Google Drive**, **OneDrive** (personal *and* Microsoft 365 work / school accounts) and **Dropbox** with a normal sign-in in your browser. No keys to type.
+- **Cloud accounts**: **Google Drive**, **OneDrive** (personal *and* Microsoft 365 work / school accounts) and **Dropbox**. Tap the service → sign in the normal way **with the official app on your phone** (install it from Google Play and sign in once) → in the picker choose the service and tap *Use this folder*. No keys, nothing to set up. (Optional direct browser sign-in, if the app owner added sign-in keys: see [`docs/CLOUD_SETUP.md`](docs/CLOUD_SETUP.md).)
 - Open, download, upload, new folder, rename, delete. **Edit a file** (Word, Excel, PowerPoint, text) and the app offers to **save it back** to the server or cloud account.
 - Saved passwords are encrypted with the phone's secure key store (Android 6+).
-- For the app owner: one-time sign-in registration, see [`docs/CLOUD_SETUP.md`](docs/CLOUD_SETUP.md).
 
 ### 🔔 What's new
 After every update a short **What's new** message lists the newest features and fixes; the same list is shown in the "Update available" window before you update.

@@ -53,6 +53,8 @@ data class Conn(
     val path: String
 ) {
     val isCloud get() = type == "dropbox" || type == "onedrive" || type == "gdrive"
+    /** A cloud drive reached through the phone's own cloud app (Google Drive / OneDrive / Dropbox app). [host] = folder address, [path] = which cloud. */
+    val isSaf get() = type == "saf"
 }
 
 object ConnType {
@@ -152,6 +154,7 @@ object Fs {
         ConnType.FTPS -> FsFtp(c, password, true)
         ConnType.SFTP -> FsSftp(ctx, c, password)
         ConnType.WEBDAV -> FsWebDav(c, password)
+        "saf" -> FsSaf(ctx, android.net.Uri.parse(c.host))
         "dropbox" -> FsDropbox(TokenSource(ctx, OAuth.DROPBOX, c))
         "onedrive" -> FsOneDrive(TokenSource(ctx, OAuth.ONEDRIVE, c))
         "gdrive" -> FsGoogle(TokenSource(ctx, OAuth.GDRIVE, c))

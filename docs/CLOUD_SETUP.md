@@ -1,4 +1,12 @@
-# Cloud sign-in: one-time setup by the app owner
+# Cloud sign-in
+
+## Default: through the phone's own cloud apps (no setup, no keys)
+Tap *Network & cloud → Google Drive / OneDrive / Dropbox*. The app opens Android's folder picker; the user chooses the service
+(its official app must be installed and signed in, personal or Microsoft 365 accounts) and taps *Use this folder*.
+Files can then be browsed, opened, edited, uploaded, renamed and deleted from MB File Manager. This works for everyone out of the box.
+
+## Optional: direct browser sign-in (one-time setup by the app owner)
+If you add the keys below as GitHub Secrets, tapping a service opens the normal sign-in page in the browser instead.
 
 **Users never type keys.** They tap *Network & cloud → Google Drive / OneDrive / Dropbox* and sign in on the normal Google /
 Microsoft / Dropbox page in their browser (personal accounts, and Microsoft 365 work / school accounts for OneDrive).
