@@ -368,4 +368,24 @@
     <string name="saved_to">Saved to %1$s</string>
     <string name="no_app_for_file">No app can open this file.</string>
     <string name="old_android_note">Android 5 does not allow saving passwords safely, so you will be asked for the password each time. Cloud accounts need Android 6 or newer.</string>
+    <string name="cat_png">PNG images</string>
+    <string name="cat_raw">RAW (.DNG)</string>
+    <string name="cat_dup">Duplicates</string>
+    <string name="screenshots">Screenshots</string>
+    <string name="whatsapp_images">WhatsApp Images</string>
+    <string name="move_to_folder">Move to folder…</string>
+    <string name="copy_to_folder">Copy to folder…</string>
+    <string name="pick_here">Use this folder</string>
+    <string name="storage_roots">Storage…</string>
+    <string name="new_folder_here">New folder here</string>
+    <string name="failed_short">Could not do that.</string>
+    <string name="photo_info">Photo info (EXIF)</string>
+    <string name="share_nothing">Nothing to save.</string>
+    <string name="share_received">%1$d file(s) received</string>
+    <string name="share_hint">Choose a folder on the phone, SD card or USB drive.</string>
+    <string name="share_choose">Choose folder and save</string>
+    <string name="share_saving">Saving …</string>
+    <string name="share_saved">Saved %1$d file(s) to %2$s</string>
+    <string name="share_failed">%1$d file(s) could not be saved.</string>
+    <string name="share_target_label">Save to File Manager</string>
 </resources>

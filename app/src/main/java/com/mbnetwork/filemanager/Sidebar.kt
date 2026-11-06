@@ -67,7 +67,7 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
             Triple(R.string.music, Environment.DIRECTORY_MUSIC, R.drawable.ic_audio to R.color.t_audio),
             Triple(R.string.videos, Environment.DIRECTORY_MOVIES, R.drawable.ic_video to R.color.t_video),
             Triple(R.string.documents, "Documents", R.drawable.ic_doc to R.color.t_doc)
-        ).forEach { (name, dir, ic) ->
+        ).plus(QuickFolders.extras(internal).map { Triple(it.first, it.second, R.drawable.ic_image to R.color.t_image) }).forEach { (name, dir, ic) ->
             val f = File(internal, dir)
             if (f.exists()) row(act.getString(name), ic.first, ic.second) { act.openLocation(f.absolutePath) }
         }

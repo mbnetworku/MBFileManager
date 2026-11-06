@@ -108,6 +108,19 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
 
         recycler = view.findViewById(R.id.list)
         recycler.layoutAnimation = android.view.animation.AnimationUtils.loadLayoutAnimation(requireContext(), R.anim.layout_anim)
+        recycler.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: android.view.MotionEvent): Boolean {
+                if (!dragSelect) return false
+                if (e.actionMasked == android.view.MotionEvent.ACTION_UP || e.actionMasked == android.view.MotionEvent.ACTION_CANCEL) { dragSelect = false; return false }
+                return e.actionMasked == android.view.MotionEvent.ACTION_MOVE
+            }
+            override fun onTouchEvent(rv: RecyclerView, e: android.view.MotionEvent) {
+                when (e.actionMasked) {
+                    android.view.MotionEvent.ACTION_MOVE -> dragTo(rv, e)
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> { dragSelect = false; updateSelectionUi() }
+                }
+            }
+        })
         selectBar = view.findViewById(R.id.selectBar)
         setupList()
         // phones: the list scrolls UNDER the glass top bar (start it just below the bar)
@@ -355,7 +368,44 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
 
     /** Long-press: in Select mode toggles the item, otherwise opens the action sheet for it. */
     private fun onItemLongClick(f: FileItem, anchor: View) {
-        if (adapter.selectionMode) { adapter.toggle(f); updateSelectionUi() } else showSheet(listOf(f))
+        if (adapter.selectionMode) {
+            adapter.toggle(f); updateSelectionUi()
+            // keep the finger down and drag over more items to select (or un-select) them all
+            dragSelect = true
+            dragAnchor = adapter.items.indexOf(f)
+            dragAdd = f.path in adapter.selected
+            dragBase = LinkedHashSet(adapter.selected).also { if (dragAdd) it.remove(f.path) else it.add(f.path) }
+            dragLast = dragAnchor
+        } else showSheet(listOf(f))
+    }
+
+    private var dragSelect = false
+    private var dragAnchor = -1
+    private var dragLast = -1
+    private var dragAdd = true
+    private var dragBase: Set<String> = emptySet()
+
+    private fun dragTo(rv: RecyclerView, e: android.view.MotionEvent) {
+        val edge = 72 * resources.displayMetrics.density
+        if (e.y < edge) rv.scrollBy(0, -28) else if (e.y > rv.height - edge) rv.scrollBy(0, 28)
+        val child = rv.findChildViewUnder(e.x, e.y) ?: return
+        val pos = rv.getChildAdapterPosition(child)
+        if (pos < 0 || pos == dragLast || dragAnchor < 0) return
+        val lo = minOf(dragAnchor, pos); val hi = maxOf(dragAnchor, pos)
+        adapter.selected.clear(); adapter.selected.addAll(dragBase)
+        for (i in lo..hi) { val p = adapter.items.getOrNull(i)?.path ?: continue; if (dragAdd) adapter.selected.add(p) else adapter.selected.remove(p) }
+        val a = minOf(lo, dragLast.coerceAtLeast(0)); val b = maxOf(hi, dragLast.coerceAtLeast(0))
+        adapter.notifyItemRangeChanged(a, b - a + 1)
+        dragLast = pos
+        updateSelectionUi()
+    }
+
+    /** "Move to folder..." / "Copy to folder...": pick the destination on the phone, SD card or USB drive. */
+    private fun pickFolder(items: List<FileItem>, move: Boolean) {
+        FolderPicker.show(requireContext(), currentPath, getString(if (move) R.string.move_to_folder else R.string.copy_to_folder)) { dest ->
+            runOp { items.forEach { if (move) ops.move(it.path, dest) else ops.copy(it.path, dest) } }
+            exitSelect()
+        }
     }
 
     // ---------- view modes & selection ----------
@@ -656,6 +706,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 }
                 MediaTypes.isImage(single.name) && File(single.path).canRead() -> {
                     addRow(g1, R.string.view_photo, R.drawable.ic_image) { openPhoto(single) }
+                    addRow(g1, R.string.photo_info, R.drawable.ic_info) { ExifInfo.show(requireContext(), single.path) }
                     addRow(g1, R.string.edit_photo, R.drawable.ic_edit) { editPhoto(single) }
                 }
                 MediaTypes.isVideo(single.name) && File(single.path).canRead() -> {
@@ -677,6 +728,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             addRow(g1, R.string.open_with, R.drawable.ic_open) { openFile(single, chooser = true) }
             addRow(g1, R.string.open_text, R.drawable.ic_edit) { openText(single, edit = false) }
         }
+        addRow(g2, R.string.move_to_folder, R.drawable.ic_move) { pickFolder(items, true) }
+        addRow(g2, R.string.copy_to_folder, R.drawable.ic_copy) { pickFolder(items, false) }
         addRow(g2, R.string.copy, R.drawable.ic_copy) { setClip(items, false) }
         addRow(g2, R.string.move, R.drawable.ic_move) { setClip(items, true) }
         addRow(g2, R.string.compress, R.drawable.ic_zip) { zipItems(items) }

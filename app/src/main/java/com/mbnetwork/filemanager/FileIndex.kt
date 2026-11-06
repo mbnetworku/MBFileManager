@@ -18,6 +18,9 @@ object FileIndex {
         Category("apk", R.string.cat_apks, R.drawable.ic_android, R.color.t_apk, listOf("apk")),
         Category("zip", R.string.cat_archives, R.drawable.ic_zip, R.color.t_archive, listOf("zip", "rar", "7z", "tar", "tgz", "gz", "obb")),
         Category("dl", R.string.downloads, R.drawable.ic_archive, R.color.grad_start, emptyList()),
+        Category("png", R.string.cat_png, R.drawable.ic_image, R.color.t_image, listOf("png")),
+        Category("raw", R.string.cat_raw, R.drawable.ic_image, R.color.t_audio, listOf("dng", "cr2", "nef", "arw", "raf", "orf", "rw2")),
+        Category("dup", R.string.cat_dup, R.drawable.ic_copy, R.color.danger, emptyList()),
         Category("big", R.string.cat_large, R.drawable.ic_storage, R.color.danger, emptyList())
     )
 
@@ -52,6 +55,11 @@ object FileIndex {
                 (dir.listFiles() ?: emptyArray()).filter { !it.name.startsWith(".") }
                     .map { FileItem(it.name, it.absolutePath, it.isDirectory, if (it.isDirectory) 0 else it.length(), it.lastModified()) }
                     .sortedByDescending { it.lastModified }
+            }
+            "dup" -> {
+                val media = (categories.first { it.key == "img" }.exts + categories.first { it.key == "vid" }.exts)
+                val (s, a) = extSel(media)
+                DuplicateFinder.find(query(ctx, s, a, "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC", 100000))
             }
             "big" -> query(ctx, "${MediaStore.Files.FileColumns.SIZE} > ?", arrayOf("${50L * 1024 * 1024}"),
                 "${MediaStore.Files.FileColumns.SIZE} DESC", limit)

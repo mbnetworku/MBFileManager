@@ -290,7 +290,7 @@ class HomeFragment : Fragment(), Refreshable {
             R.string.music to Environment.DIRECTORY_MUSIC,
             R.string.videos to Environment.DIRECTORY_MOVIES,
             R.string.documents to "Documents"
-        ).forEach { (name, dir) ->
+        ).plus(QuickFolders.extras(internal)).forEach { (name, dir) ->
             val f = File(internal, dir)
             if (!f.exists()) return@forEach
             val count = trailingText()
