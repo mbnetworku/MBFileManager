@@ -53,7 +53,7 @@ class FileAdapter(
         val name: TextView = v.findViewById(R.id.name)
         val info: TextView = v.findViewById(R.id.info)
         val check: ImageView? = v.findViewById(R.id.check)
-        val chevron: View? = v.findViewById(R.id.chevron)
+        val chevron: View? = v.findViewById(R.id.more)   // the "⋯" button (list rows)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
