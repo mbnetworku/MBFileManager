@@ -44,6 +44,7 @@ class PlayerActivity : AppCompatActivity() {
     private var dragging = false
     private var queueDialog: BottomSheetDialog? = null
     private var queueAdapter: QueueAdapter? = null
+    private var inlineAdapter: QueueAdapter? = null
     private var queueTitle: TextView? = null
     private fun px(v: Int) = (v * resources.displayMetrics.density).toInt()
 
@@ -85,6 +86,15 @@ class PlayerActivity : AppCompatActivity() {
         play = findViewById(R.id.btnPlay)
         shuffle = findViewById(R.id.btnShuffle)
         repeat = findViewById(R.id.btnRepeat)
+        equalizer.setOnClickListener { equalizer.nextStyle() }
+        // song list shown at the top in landscape (this view exists only in the landscape layout)
+        findViewById<RecyclerView?>(R.id.queueList)?.let { rv ->
+            val a = QueueAdapter()
+            inlineAdapter = a
+            rv.layoutManager = LinearLayoutManager(this)
+            rv.adapter = a
+            rv.scrollToPosition(MusicPlayer.index)
+        }
 
         findViewById<ImageButton>(R.id.btnClose).setOnClickListener { finish() }
         findViewById<ImageButton>(R.id.btnList).setOnClickListener { showQueue() }
@@ -156,6 +166,8 @@ class PlayerActivity : AppCompatActivity() {
         equalizer.playing = MusicPlayer.isPlaying
         attachEqualizer()
         queueAdapter?.notifyDataSetChanged()
+        inlineAdapter?.notifyDataSetChanged()
+        findViewById<RecyclerView?>(R.id.queueList)?.let { if (MusicPlayer.index in 0 until MusicPlayer.queue.size) it.smoothScrollToPosition(MusicPlayer.index) }
         queueTitle?.text = getString(R.string.playing_queue_n, MusicPlayer.queue.size)
     }
 

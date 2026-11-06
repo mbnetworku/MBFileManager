@@ -1,3 +1,5 @@
+## 2.9.0.031
+- Music player in landscape (car radios): song list across the top, equalizer and playback buttons below. Tap the equalizer to change its look (bars, lines or dots).
 ## 2.9.0.030
 - New: swipe left / right on the mini player bar or on the full player to change song.
 - Changed: the mini player bar comes back when you press play again after hiding it.

@@ -103,14 +103,27 @@ class EqualizerView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet?
         paint.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(0xFF7DD3FC.toInt(), 0xFF0A84FF.toInt(), 0xFF7DD3FC.toInt()),
             floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
         val gap = w / count
-        val bw = gap * 0.55f
+        val bw = when (style) { 1 -> gap * 0.18f; 2 -> gap * 0.42f; else -> gap * 0.55f }
         for (i in 0 until count) {
             val bh = (h * cur[i]).coerceAtLeast(bw)
             val x = i * gap + (gap - bw) / 2f
-            val top = (h - bh) / 2f
-            c.drawRoundRect(x, top, x + bw, top + bh, bw / 2f, bw / 2f, paint)       // symmetric around the middle
+            when (style) {
+                2 -> {                                                                // dots above and below the middle
+                    val off = (h * cur[i]) / 2f
+                    c.drawCircle(x + bw / 2f, h / 2f - off, bw / 2f, paint)
+                    c.drawCircle(x + bw / 2f, h / 2f + off, bw / 2f, paint)
+                }
+                else -> {
+                    val top = (h - bh) / 2f
+                    c.drawRoundRect(x, top, x + bw, top + bh, bw / 2f, bw / 2f, paint)   // symmetric around the middle
+                }
+            }
         }
     }
+
+    /** Tap the equalizer to change its look: bars, thin lines, dots. */
+    var style = 0
+    fun nextStyle() { style = (style + 1) % 3; invalidate() }
 
     override fun onDetachedFromWindow() { running = false; detach(); super.onDetachedFromWindow() }
 }
