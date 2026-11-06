@@ -99,14 +99,14 @@ class RemoteHomeActivity : AppCompatActivity() {
             val mine = conns.filter { it.type == p.id }
             if (mine.isEmpty()) {
                 val has = OAuth.clientId(this, p).isNotEmpty()
-                row(R.drawable.ic_cloud, col(R.color.t_doc), p.title, getString(if (has) R.string.tap_sign_in else R.string.tap_setup),
-                    { connectCloud(p) }, { keysDialog(p) {} })
+                row(R.drawable.ic_cloud, col(R.color.t_doc), p.title, getString(if (has) R.string.tap_sign_in else R.string.not_set_up),
+                    { connectCloud(p) }, if (OAuth.builtIn(p)) null else ({ keysDialog(p) {} }))
             } else mine.forEach { c ->
                 row(R.drawable.ic_cloud, col(R.color.t_doc), c.name, getString(R.string.connected), { open(c) }, { manage(c) })
             }
         }
-        row(R.drawable.ic_info, col(R.color.text_secondary), getString(R.string.cloud_help), getString(R.string.cloud_help_sub), {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mbnetworku/MBFileManager/blob/claude/android-file-manager-app-vazx9g/docs/CLOUD_SETUP.md")))
+        if (OAuth.all.any { !OAuth.builtIn(it) }) row(R.drawable.ic_info, col(R.color.text_secondary), getString(R.string.cloud_help), getString(R.string.cloud_help_sub), {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mbnetworku/MBFileManager/blob/main/docs/CLOUD_SETUP.md")))
         })
         if (!Secrets.available()) list.addView(TextView(this).apply {
             text = getString(R.string.old_android_note); textSize = 12f; setTextColor(col(R.color.text_secondary)); setPadding(dp(8), dp(10), dp(8), 0)
@@ -121,7 +121,9 @@ class RemoteHomeActivity : AppCompatActivity() {
         val items = ArrayList<String>(); val acts = ArrayList<() -> Unit>()
         items += getString(R.string.open); acts += { open(c) }
         if (!c.isCloud) { items += getString(R.string.edit); acts += { form(c.type, c, null) } }
-        else { items += getString(R.string.change_keys); acts += { OAuth.all.firstOrNull { it.id == c.type }?.let { keysDialog(it) {} } } }
+        else if (OAuth.all.firstOrNull { it.id == c.type }?.let { !OAuth.builtIn(it) } == true) {
+            items += getString(R.string.change_keys); acts += { OAuth.all.firstOrNull { it.id == c.type }?.let { keysDialog(it) {} } }
+        }
         items += getString(if (c.isCloud) R.string.sign_out else R.string.remove); acts += {
             ConnStore.remove(this, c.id); render()
         }
@@ -131,7 +133,12 @@ class RemoteHomeActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ cloud
 
     private fun connectCloud(p: OAuth.Provider) {
-        if (OAuth.clientId(this, p).isEmpty()) keysDialog(p) { signIn(p) } else signIn(p)
+        when {
+            OAuth.clientId(this, p).isNotEmpty() -> signIn(p)
+            else -> MaterialAlertDialogBuilder(this).setTitle(p.title).setMessage(R.string.not_set_up_msg)
+                .setPositiveButton(R.string.ok, null)
+                .setNeutralButton(R.string.advanced) { _, _ -> keysDialog(p) { signIn(p) } }.show()
+        }
     }
 
     private fun signIn(p: OAuth.Provider) {

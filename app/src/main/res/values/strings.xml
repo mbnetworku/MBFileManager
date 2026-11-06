@@ -339,7 +339,7 @@
     <string name="scan_none">No file-sharing devices found. Are you on Wi-Fi?</string>
     <string name="no_wifi">Connect to a Wi-Fi network first.</string>
     <string name="tap_sign_in">Tap to sign in</string>
-    <string name="tap_setup">Tap to set up (needs your own app key)</string>
+    <string name="tap_setup">Tap to set up</string>
     <string name="connected">Connected</string>
     <string name="sign_out">Sign out</string>
     <string name="remove">Remove</string>
@@ -390,4 +390,9 @@
     <string name="share_target_label">Save to File Manager</string>
     <string name="whats_new_title">What\'s new in v%1$s</string>
     <string name="whats_new_label">What\'s new:</string>
+    <string name="not_set_up">Not available in this build yet</string>
+    <string name="not_set_up_msg">Sign-in for this service is not set up in this version of the app yet. The app owner needs to add it once (see docs/CLOUD_SETUP.md).</string>
+    <string name="advanced">Advanced</string>
+    <string name="save_back_q">You changed this file. Save it back to %1$s?</string>
+    <string name="save_back">Save back</string>
 </resources>

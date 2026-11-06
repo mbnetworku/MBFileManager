@@ -33,6 +33,8 @@ interface RemoteFs {
     fun list(dir: String): List<RemoteEntry>
     fun download(e: RemoteEntry, out: OutputStream)
     fun upload(dir: String, name: String, file: File)
+    /** Saves an edited copy back over [e] (same name). Most servers simply overwrite; Dropbox / Google Drive override this. */
+    fun replace(dir: String, e: RemoteEntry, file: File) = upload(dir, e.name, file)
     fun mkdir(dir: String, name: String)
     fun delete(e: RemoteEntry)
     fun rename(e: RemoteEntry, newName: String)

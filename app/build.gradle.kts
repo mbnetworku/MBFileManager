@@ -11,8 +11,15 @@ android {
         applicationId = "com.mbnetwork.filemanager"
         minSdk = 21          // Android 5.0 Lollipop
         targetSdk = 34
-        versionCode = 46
-        versionName = "2.9.0.026"
+        versionCode = 47
+        // Cloud sign-in keys of the APP (one registration by the app owner; users just sign in). They are public client ids,
+        // passed in by the build (GitHub Actions secrets). Empty = that service shows "not set up in this build".
+        fun key(n: String) = "\"" + (System.getenv(n) ?: "") + "\""
+        buildConfigField("String", "GDRIVE_CLIENT_ID", key("MBFM_GDRIVE_ID"))
+        buildConfigField("String", "GDRIVE_CLIENT_SECRET", key("MBFM_GDRIVE_SECRET"))
+        buildConfigField("String", "MS_CLIENT_ID", key("MBFM_MS_ID"))
+        buildConfigField("String", "DROPBOX_APP_KEY", key("MBFM_DROPBOX_KEY"))
+        versionName = "2.9.0.027"
     }
 
     // One fixed key for every build, so new versions install as UPDATES over old ones.

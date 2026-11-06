@@ -1,3 +1,6 @@
+## 2.9.0.027
+- Cloud: normal sign-in for Google Drive, OneDrive (personal and Microsoft 365) and Dropbox - no keys to type.
+- New: after you edit a file from a server or cloud account, the app offers to save it back.
 ## 2.9.0.026
 - New: a short "What's new" message now appears after each update, and also in the update-available window before you update.
 ## 2.9.0.025

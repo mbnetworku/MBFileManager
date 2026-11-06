@@ -42,6 +42,10 @@ jobs:
           MBFM_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           MBFM_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           MBFM_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          MBFM_GDRIVE_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          MBFM_GDRIVE_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          MBFM_MS_ID: ${{ secrets.MS_CLIENT_ID }}
+          MBFM_DROPBOX_KEY: ${{ secrets.DROPBOX_APP_KEY }}
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease

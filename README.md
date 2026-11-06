@@ -22,7 +22,6 @@
 | | Link |
 |---|---|
 | **Latest APK (always newest)** | **[MBFileManager.apk](https://github.com/mbnetworku/MBFileManager/releases/latest/download/MBFileManager.apk)** |
-| Version 1.1 | [MBFileManager-v1.1.apk](https://github.com/mbnetworku/MBFileManager/releases/download/v1.1/MBFileManager-v1.1.apk) |
 | All versions | [Releases page](https://github.com/mbnetworku/MBFileManager/releases) |
 
 ### How to install
@@ -57,32 +56,45 @@ Smooth slide / fade between screens, list items that rise in, a selection toolba
 - Root places (`Android/data`, `/`) only on rooted devices
 
 ### 📁 File Explorer
-- **Icons view** with real photo/video thumbnails and APK icons, or **List view** (⋮ → View)
-- **Select mode**: tick many files → glass action bar: **Share · Copy · Move · Zip · Delete · More**
-- **Action sheet**: long-press any file → share straight to an app, copy, move, zip, rename, details, delete
-- 🖼️ **Thumbnails everywhere**: photos, video frames, music album art, PDF first page, APK icons
-- 📄 **Office viewer & editor**: Word `.docx` (view formatted, edit text), Excel `.xlsx` (sheets grid, edit cells), PowerPoint `.pptx` (slides, edit text)
-- 🗜️ **Zip & Unzip**: compress files/folders to `.zip`; tap a `.zip` to extract it
-- Browse **internal storage**, **SD card** and **USB drives**
-- Open, share, rename, copy, move, paste, delete, details
-- Create folders and files · show hidden files · sort by name / size / date
-- **Tap an `.apk` to install it**
-- 🖼️ **Photo viewer**: swipe through the folder, pinch / double-tap zoom, share, delete
-- 🎨 **Photo editor**: crop (1:1, 4:3, 16:9…), rotate, flip, 9 filters, brightness / contrast / saturation, save as a copy or replace
-- ✨ **Smart (on-device) photo tools**: auto enhance, smart crop, blur faces, portrait blur
-- 🗜️ **Archives**: open/extract **ZIP, RAR (RAR 4 and older), TAR, TAR.GZ / TGZ**; create **ZIP, TAR, TAR.GZ** (select files → Compress). Creating RAR is not possible (closed format).
-- 📥 **Save to File Manager**: in Google Photos / Samsung Gallery / any app, select photos → Share → *Save to File Manager* → pick any folder on the phone, SD card or USB drive.
-- 🔎 **Smart filters** (Browse chips): PNG images, RAW (.DNG), **Duplicates** (same size + SHA-256), Large files. **Photo info (EXIF)** in a photo's menu. **Move to folder… / Copy to folder…** with a folder picker across all storages. Drag over photos in Select mode to select many at once. Quick folders: Screenshots and WhatsApp Images.
-- 🌐 **Network & cloud** (Browse → *Network & cloud*): connect to **Windows shares (SMB), FTP / FTPS, SFTP, WebDAV (NAS, Nextcloud)**; *Find devices on this Wi-Fi* scans for PCs and NAS boxes; open, download, upload, new folder, rename and delete. Also **Google Drive, OneDrive and Dropbox** with your own free app key - see [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md).
-- 🔐 **Passwords**: open password-protected **PDF**, **Word / Excel / PowerPoint** (Office 2010+) and **ZIP / RAR** files (enter the password when asked); create **ZIP with a password** (AES-256, open it with 7-Zip / WinRAR). Locked Office files are opened through an unlocked copy saved next to the original. Creating a password-protected RAR is not possible.
-- 📄 **PDF reader + editor** (on the phone): scroll, pinch to zoom, then ✎ Edit to draw, highlight and add text, saved as a new PDF. **Word → PDF**: open a .docx → ⋮ → Convert to PDF (or long-press the file). Pictures, bold/italic, headings, lists and simple tables are kept.
-- 🎵 **Music**: swipe the full player down to get the mini bar back; swipe the mini bar down to choose *Hide* or *Close and stop*; ✕ stops the music. Music keeps playing when you leave the app, and the notification (if allowed in settings) has play / pause / next / stop.
-- 🗑️ **Delete the playing video** from inside the video player (Bin or forever); the next video starts.
-- 🎬 **Modern video player** (floating glass controls, double-tap left/right to skip 10 s, auto-hiding bars; previous / next video in the folder, ±10 s, hold ±10 to fast-forward or rewind, speed 0.5x–2x on Android 6+, seek bar) and **video editor**: trim, mute, rotate, saved as a new MP4 without losing quality
-- ✂️ **Remove background** (photo editor → AI): on-device, no internet. Works best when the subject stands out; use **Magic wand** to fix the rest. Saved as PNG (transparent).
-- 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek), album art, an **equalizer that follows the real sound** (microphone permission, optional), a **playing queue** (tap to play, remove or delete songs) and a notification with controls
-- 📝 **Built-in notepad**: text files open directly. Read, edit and save. Create new `.txt` files with ＋
-- 🎮 **OBB folder** shortcut (Storage → OBB folder) for game data
+- **Icons view** with real photo / video thumbnails and APK icons, or **List view** (⋮ → View); 2–4+ columns, pinch to zoom the grid
+- **Select mode**: tick many files, or long-press and **drag over items** to select a whole row/range → glass action bar: **Share · Copy · Move · Zip · Delete · More**
+- **Action sheet**: long-press any file → share, **Move to folder… / Copy to folder…** (folder picker across phone, SD card and USB), copy, move, zip, rename, details, delete
+- Browse **internal storage**, **SD card** and **USB drives**; create folders and files · show hidden files · sort by name / size / date
+- **Smart filters** (Browse chips): Images, Videos, Music, Documents, APKs, Archives, Downloads, **PNG images**, **RAW (.DNG)**, **Duplicates** (same size + SHA-256), Large files
+- Quick folders: Downloads, Camera, Pictures, Music, Videos, Documents, **Screenshots**, **WhatsApp Images**
+- 📥 **Save to File Manager** (Android Share menu): in Google Photos / Samsung Gallery / any app select photos → Share → *Save to File Manager* → pick any folder on the phone, SD card or USB drive
+- **Tap an `.apk` to install it** · 🎮 OBB folder shortcut
+
+### 🖼️ Photos & video
+- **Photo viewer**: swipe through the folder, pinch / double-tap zoom, share, delete, **Photo info (EXIF)**: resolution, camera, date, exposure, ISO, location
+- **Photo editor**: crop, rotate, flip, 9 filters, brightness / contrast / saturation; **on-device smart tools**: auto enhance, smart crop, blur faces, portrait blur, **remove background** (+ Magic wand, saved as transparent PNG)
+- **Video player**: floating glass controls, previous / next video, double-tap to skip 10 s, hold ±10 to fast-forward / rewind, speed 0.5×–2× (Android 6+), **delete the playing video** (Bin or forever)
+- **Video editor**: trim, mute, rotate, saved as a new MP4 without losing quality
+
+### 🎵 Music
+- Built-in player: tap a song to play the folder (shuffle, repeat, seek), album art, an **equalizer that follows the real sound** (optional microphone permission), a **playing queue** (tap to play, remove or delete songs)
+- **Mini bar** above the tab bar: tap to open, swipe down for *Hide* or *Close and stop*, ✕ stops the music; swipe the full player down to get the mini bar back
+- Music keeps playing when you leave the app; the notification (if allowed in settings) has play / pause / next / stop
+
+### 📄 Documents
+- **Office viewer & editor**: Word `.docx` (formatted view, edit text), Excel `.xlsx` (sheets, edit cells), PowerPoint `.pptx` (slides, edit text)
+- **PDF reader + editor**: scroll, pinch to zoom, then ✎ Edit to draw, highlight and add text, saved as a new PDF
+- **Word → PDF**: open a `.docx` → ⋮ → Convert to PDF (or long-press the file); pictures, bold / italic, headings, lists and simple tables are kept
+- **Notepad**: text files open directly; read, edit, save; create new `.txt` files with ＋
+- 🔐 **Passwords**: open password-protected **PDF**, **Word / Excel / PowerPoint** (Office 2010+) and **ZIP / RAR**; create **ZIP with a password** (AES-256). Locked Office files open through an unlocked copy saved next to the original.
+
+### 🗜️ Archives
+- Open / extract **ZIP, RAR (RAR 4 and older), TAR, TAR.GZ / TGZ**; create **ZIP, TAR, TAR.GZ** (select files → Compress). Creating RAR is not possible (closed format).
+
+### 🌐 Network & cloud (Browse → *Network & cloud*)
+- **Local network**: Windows shares (**SMB**), **FTP / FTPS**, **SFTP**, **WebDAV** (NAS, Nextcloud, ownCloud). *Find devices on this Wi-Fi* scans for PCs and NAS boxes.
+- **Cloud accounts**: **Google Drive**, **OneDrive** (personal *and* Microsoft 365 work / school accounts) and **Dropbox** with a normal sign-in in your browser. No keys to type.
+- Open, download, upload, new folder, rename, delete. **Edit a file** (Word, Excel, PowerPoint, text) and the app offers to **save it back** to the server or cloud account.
+- Saved passwords are encrypted with the phone's secure key store (Android 6+).
+- For the app owner: one-time sign-in registration, see [`docs/CLOUD_SETUP.md`](docs/CLOUD_SETUP.md).
+
+### 🔔 What's new
+After every update a short **What's new** message lists the newest features and fixes; the same list is shown in the "Update available" window before you update.
 
 ### 🔌 USB drive tools
 - Finds USB OTG drives, card readers and SD cards, with a live "USB drive connected" alert
@@ -151,12 +163,13 @@ One switch (☰ sidebar or Appearance → **Block internet for AI**, **on by def
 
 ## ©️ Copyright
 
-© 2026 **MB Network**. All rights reserved. The same notice, with the open-source notices (libaums, AndroidX, Material, Kotlin: Apache License 2.0), is inside the app under **☰ → About and copyright**.
+© 2026 **MB Network**. All rights reserved. The same notice, with the open-source notices (libaums, AndroidX, Material, Kotlin, OkHttp, junrar, zip4j, commons-net, PDFBox-Android: Apache License 2.0; JSch: BSD; jcifs-ng: LGPL), is inside the app under **☰ → About and copyright**.
 
 ## 🔄 Updates
 
-- The app checks for new versions automatically, about once a day, or tap **Sidebar → Check for updates**
+- The app checks for new versions automatically, about once a day, or tap **Sidebar → Check for updates**; the update window and the first start after updating show **What's new**
 - To install new versions **as updates** (no uninstall), builds must be signed with one fixed key stored in GitHub Secrets: `SIGNING_KEY_BASE64`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`
+- Cloud sign-in (optional, one time, see `docs/CLOUD_SETUP.md`): `GDRIVE_CLIENT_ID`, `GDRIVE_CLIENT_SECRET`, `MS_CLIENT_ID`, `DROPBOX_APP_KEY`
 
 ## 🔐 Permissions: asked only when needed
 

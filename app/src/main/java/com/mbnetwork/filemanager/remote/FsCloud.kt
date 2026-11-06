@@ -66,6 +66,13 @@ class FsDropbox(private val t: TokenSource) : RemoteFs {
             .post(file.asRequestBody("application/octet-stream".toMediaType())).build()).close()
     }
 
+    override fun replace(dir: String, e: RemoteEntry, file: File) {
+        if (file.length() > 150L * 1024 * 1024) throw IOException("Dropbox uploads here are limited to 150 MB per file.")
+        val a = JSONObject().put("path", e.path).put("mode", "overwrite")
+        Http.run(api("https://content.dropboxapi.com/2/files/upload").header("Dropbox-API-Arg", arg(a))
+            .post(file.asRequestBody("application/octet-stream".toMediaType())).build()).close()
+    }
+
     override fun mkdir(dir: String, name: String) {
         Http.run(api("https://api.dropboxapi.com/2/files/create_folder_v2")
             .post(Http.jsonBody(JSONObject().put("path", "$dir/$name").toString())).build()).close()
@@ -200,6 +207,13 @@ class FsGoogle(private val t: TokenSource) : RemoteFs {
             .post(Http.jsonBody(meta)).build())
         val loc = start.use { it.header("Location") } ?: throw IOException("Google Drive did not accept the upload.")
         Http.run(Request.Builder().url(loc).put(file.asRequestBody("application/octet-stream".toMediaType())).build()).close()
+    }
+
+    override fun replace(dir: String, e: RemoteEntry, file: File) {
+        if (e.extra.isNotEmpty()) { upload(dir, e.name, file); return }        // a Google Doc / Sheet / Slide: save as a normal file next to it
+        Http.run(Request.Builder().url("https://www.googleapis.com/upload/drive/v3/files/${e.path}?uploadType=media")
+            .header("Authorization", "Bearer ${t.get()}")
+            .patch(file.asRequestBody("application/octet-stream".toMediaType())).build()).close()
     }
 
     override fun mkdir(dir: String, name: String) {

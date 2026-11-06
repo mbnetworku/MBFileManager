@@ -209,7 +209,28 @@ class RemoteBrowserActivity : AppCompatActivity() {
     private fun click(e: RemoteEntry) {
         if (e.isDir) { stack += e.path to e.name; load(); return }
         val dest = File(cacheDir2(), e.name.replace('/', '_'))
-        download(e, dest) { openLocal(it) }
+        download(e, dest) {
+            openedFile = it; openedEntry = e; openedDir = stack.last().first; openedStamp = it.lastModified()
+            openLocal(it)
+        }
+    }
+
+    // After editing a downloaded file (Word, Excel, PowerPoint, text ...) offer to save it back to the server / cloud account.
+    private var openedFile: File? = null
+    private var openedEntry: RemoteEntry? = null
+    private var openedDir = ""
+    private var openedStamp = 0L
+
+    override fun onResume() {
+        super.onResume()
+        val f = openedFile ?: return
+        val e = openedEntry ?: return
+        if (f.exists() && f.lastModified() > openedStamp) {
+            openedFile = null
+            MaterialAlertDialogBuilder(this).setTitle(e.name).setMessage(getString(R.string.save_back_q, conn.name))
+                .setPositiveButton(R.string.save_back) { _, _ -> op(R.string.done) { fs!!.replace(openedDir, e, f) } }
+                .setNegativeButton(R.string.not_now, null).show()
+        }
     }
 
     private fun menu(e: RemoteEntry) {

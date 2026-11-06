@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
+import com.mbnetwork.filemanager.BuildConfig
 import okhttp3.Request
 import java.io.IOException
 import java.net.InetAddress
@@ -31,7 +32,7 @@ object OAuth {
 
     val DROPBOX = Provider("dropbox", "Dropbox", "https://www.dropbox.com/oauth2/authorize", "https://api.dropboxapi.com/oauth2/token",
         "", false, mapOf("token_access_type" to "offline"), false)
-    val ONEDRIVE = Provider("onedrive", "OneDrive", "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+    val ONEDRIVE = Provider("onedrive", "OneDrive / Microsoft 365", "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
         "https://login.microsoftonline.com/common/oauth2/v2.0/token", "Files.ReadWrite offline_access", false, emptyMap(), true)
     val GDRIVE = Provider("gdrive", "Google Drive", "https://accounts.google.com/o/oauth2/v2/auth", "https://oauth2.googleapis.com/token",
         "https://www.googleapis.com/auth/drive", true, mapOf("access_type" to "offline", "prompt" to "consent"), false)
@@ -40,8 +41,15 @@ object OAuth {
 
     private fun sp(ctx: Context) = ctx.getSharedPreferences("remote", Context.MODE_PRIVATE)
 
-    fun clientId(ctx: Context, p: Provider): String = sp(ctx).getString("cid_${p.id}", "") ?: ""
-    fun clientSecret(ctx: Context, p: Provider): String = Secrets.dec(sp(ctx).getString("csec_${p.id}", "") ?: "")
+    /** The keys that are built into the app (the owner registers the app once; users only sign in). */
+    private fun builtInId(p: Provider) = when (p.id) { "gdrive" -> BuildConfig.GDRIVE_CLIENT_ID; "onedrive" -> BuildConfig.MS_CLIENT_ID; else -> BuildConfig.DROPBOX_APP_KEY }
+    private fun builtInSecret(p: Provider) = if (p.id == "gdrive") BuildConfig.GDRIVE_CLIENT_SECRET else ""
+
+    /** True when the app already has its own sign-in key, so users never see any key screen. */
+    fun builtIn(p: Provider) = builtInId(p).isNotEmpty()
+
+    fun clientId(ctx: Context, p: Provider): String = builtInId(p).ifEmpty { sp(ctx).getString("cid_${p.id}", "") ?: "" }
+    fun clientSecret(ctx: Context, p: Provider): String = builtInSecret(p).ifEmpty { Secrets.dec(sp(ctx).getString("csec_${p.id}", "") ?: "") }
 
     fun saveKeys(ctx: Context, p: Provider, id: String, secret: String) {
         sp(ctx).edit().putString("cid_${p.id}", id.trim()).putString("csec_${p.id}", Secrets.enc(secret.trim())).apply()
