@@ -827,7 +827,9 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         startActivity(Intent(requireContext(), PhotoEditorActivity::class.java).putExtra(PhotoEditorActivity.EXTRA_PATH, f.path))
 
     private fun openVideo(f: FileItem) =
-        startActivity(Intent(requireContext(), VideoPlayerActivity::class.java).putExtra(VideoPlayerActivity.EXTRA_PATH, f.path))
+        startActivity(Intent(requireContext(), VideoPlayerActivity::class.java)
+            .putExtra(VideoPlayerActivity.EXTRA_PATH, f.path)
+            .putExtra(VideoPlayerActivity.EXTRA_LIST, adapter.items.filter { !it.isDir && MediaTypes.isVideo(it.name) }.map { it.path }.toTypedArray()))
 
     private fun editVideo(f: FileItem) =
         startActivity(Intent(requireContext(), VideoEditorActivity::class.java).putExtra(VideoEditorActivity.EXTRA_PATH, f.path))

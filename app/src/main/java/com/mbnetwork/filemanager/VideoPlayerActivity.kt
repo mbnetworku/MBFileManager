@@ -110,11 +110,20 @@ class VideoPlayerActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or WindowManager.LayoutParams.FLAG_FULLSCREEN)
         window.setBackgroundDrawable(ColorDrawable(Color.BLACK))
         val f = File(path)
-        siblings = try {
-            f.parentFile?.listFiles()?.filter { it.isFile && MediaTypes.isVideo(it.name) }
-                ?.sortedBy { it.name.lowercase() }?.map { it.absolutePath } ?: listOf(path)
-        } catch (e: Throwable) { listOf(path) }
-        index = siblings.indexOf(path).coerceAtLeast(0)
+        // the playlist: the videos shown in the list the user came from, else all videos in the same folder
+        val given = intent.getStringArrayExtra(EXTRA_LIST)?.toList()?.filter { File(it).exists() } ?: emptyList()
+        var list: List<String> = given
+        if (list.size < 2) {
+            list = try {
+                f.parentFile?.listFiles()?.filter { it.isFile && MediaTypes.isVideo(it.name) }
+                    ?.sortedWith(compareBy({ it.name.lowercase() }, { it.name }))?.map { it.absolutePath } ?: emptyList()
+            } catch (e: Throwable) { emptyList() }
+        }
+        fun same(x: String, y: String) = x == y || try { File(x).canonicalPath == File(y).canonicalPath } catch (e: Throwable) { false }
+        var at = list.indexOfFirst { same(it, path) }
+        if (at < 0) { list = list + path; at = list.size - 1 }
+        siblings = list
+        index = at
 
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         video = VideoView(this)
@@ -225,7 +234,7 @@ class VideoPlayerActivity : AppCompatActivity() {
             if (index + 1 < siblings.size) openAt(index + 1) else { play.setImageResource(R.drawable.ic_play); showBars(true) }
         }
         video.setOnErrorListener { _, _, _ ->
-            Toast.makeText(this, R.string.video_failed, Toast.LENGTH_LONG).show(); true
+            Toast.makeText(this, R.string.video_failed, Toast.LENGTH_LONG).show(); prepared = false; true
         }
         video.setVideoPath(path)
         handler.post(ticker)
@@ -317,5 +326,5 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     override fun finish() { super.finish(); DeviceUi.exitSlide(this) }
 
-    companion object { const val EXTRA_PATH = "path" }
+    companion object { const val EXTRA_PATH = "path"; const val EXTRA_LIST = "list" }
 }
