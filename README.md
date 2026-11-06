@@ -70,7 +70,9 @@ Smooth slide / fade between screens, list items that rise in, a selection toolba
 - 🖼️ **Photo viewer**: swipe through the folder, pinch / double-tap zoom, share, delete
 - 🎨 **Photo editor**: crop (1:1, 4:3, 16:9…), rotate, flip, 9 filters, brightness / contrast / saturation, save as a copy or replace
 - ✨ **Smart (on-device) photo tools**: auto enhance, smart crop, blur faces, portrait blur
-- 🎬 **Video player** (previous / next video in the folder, ±10 s, hold ±10 to fast-forward or rewind, speed 0.5x–2x on Android 6+, seek bar) and **video editor**: trim, mute, rotate, saved as a new MP4 without losing quality
+- 📄 **PDF reader + editor** (on the phone): scroll, pinch to zoom, then ✎ Edit to draw, highlight and add text, saved as a new PDF. **Word → PDF**: open a .docx → ⋮ → Convert to PDF (or long-press the file). Pictures, bold/italic, headings, lists and simple tables are kept.
+- 🎵 The mini player bar has a ✕ button (stops the music); swipe it down to just hide it, tap it to open the full player.
+- 🎬 **Modern video player** (floating glass controls, double-tap left/right to skip 10 s, auto-hiding bars; previous / next video in the folder, ±10 s, hold ±10 to fast-forward or rewind, speed 0.5x–2x on Android 6+, seek bar) and **video editor**: trim, mute, rotate, saved as a new MP4 without losing quality
 - ✂️ **Remove background** (photo editor → AI): on-device, no internet. Works best when the subject stands out; use **Magic wand** to fix the rest. Saved as PNG (transparent).
 - 🎵 **Built-in music player**: tap a song to play the whole folder (shuffle, repeat, seek), album art, an **equalizer that follows the real sound** (microphone permission, optional), a **playing queue** (tap to play, remove or delete songs) and a notification with controls
 - 📝 **Built-in notepad**: text files open directly. Read, edit and save. Create new `.txt` files with ＋

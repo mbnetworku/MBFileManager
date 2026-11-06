@@ -438,6 +438,7 @@ class OfficeActivity : AppCompatActivity() {
         if (kind != "xlsx") menu.add(0, 1, 0, R.string.edit).setIcon(R.drawable.ic_edit).apply {
             setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM); isVisible = !editing
         }
+        if (kind == "docx") menu.add(0, 3, 0, R.string.convert_pdf).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
         menu.add(0, 2, 0, R.string.save).setIcon(R.drawable.ic_save).apply {
             setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM); isVisible = editing || kind == "xlsx"
         }
@@ -449,6 +450,7 @@ class OfficeActivity : AppCompatActivity() {
             android.R.id.home -> closeAsk()
             1 -> { editing = true; render() }
             2 -> save()
+            3 -> DocxToPdf.start(this, file)
             else -> return super.onOptionsItemSelected(item)
         }
         return true

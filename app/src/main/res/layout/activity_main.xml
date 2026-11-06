@@ -124,6 +124,17 @@
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_next"
                     android:tint="@color/label" />
+
+                <ImageButton
+                    android:id="@+id/miniClose"
+                    android:layout_width="40dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/mini_close"
+                    android:padding="12dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_close"
+                    android:tint="@color/text_secondary" />
             </LinearLayout>
         </com.mbnetwork.filemanager.GlassView>
 

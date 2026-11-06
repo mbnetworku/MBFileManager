@@ -342,6 +342,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         when {
             f.isDir -> { virtualTitle = null; virtualLoader = null; limitPath = if (f.path.startsWith(internalRoot)) internalRoot else limitPath; navigate(f.path) }
             ZipUtil.isZip(f.name) -> confirmExtract(f)
+            PdfActivity.isPdf(f.name) && File(f.path).canRead() -> openPdf(f)
             OfficeDoc.isOffice(f.name) && OfficeDoc.kind(f.name) != "old" -> openOffice(f)
             ApkInstaller.isApk(f.name) -> installApk(f)
             MediaTypes.isImage(f.name) && File(f.path).canRead() -> openPhoto(f)
@@ -641,8 +642,15 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                     addRow(g1, R.string.edit_video, R.drawable.ic_edit) { editVideo(single) }
                 }
                 MusicPlayer.isAudio(single.name) -> addRow(g1, R.string.play_music, R.drawable.ic_play) { playMusic(single) }
-                OfficeDoc.isOffice(single.name) && OfficeDoc.kind(single.name) != "old" ->
+                PdfActivity.isPdf(single.name) && File(single.path).canRead() -> {
+                    addRow(g1, R.string.open_pdf, R.drawable.ic_doc) { openPdf(single) }
+                    addRow(g1, R.string.edit, R.drawable.ic_edit) { openPdf(single, edit = true) }
+                }
+                OfficeDoc.isOffice(single.name) && OfficeDoc.kind(single.name) != "old" -> {
                     addRow(g1, R.string.open_office, R.drawable.ic_doc) { openOffice(single) }
+                    if (OfficeDoc.kind(single.name) == "docx")
+                        addRow(g1, R.string.convert_pdf, R.drawable.ic_doc) { DocxToPdf.start(requireActivity() as androidx.appcompat.app.AppCompatActivity, File(single.path)) }
+                }
                 ZipUtil.isZip(single.name) -> addRow(g1, R.string.extract, R.drawable.ic_zip) { extract(single) }
             }
             addRow(g1, R.string.open_with, R.drawable.ic_open) { openFile(single, chooser = true) }
@@ -802,6 +810,9 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
 
     private fun editVideo(f: FileItem) =
         startActivity(Intent(requireContext(), VideoEditorActivity::class.java).putExtra(VideoEditorActivity.EXTRA_PATH, f.path))
+
+    private fun openPdf(f: FileItem, edit: Boolean = false) =
+        startActivity(Intent(requireContext(), PdfActivity::class.java).putExtra(PdfActivity.EXTRA_PATH, f.path).putExtra(PdfActivity.EXTRA_EDIT, edit))
 
     private fun openOffice(f: FileItem) {
         startActivity(Intent(requireContext(), OfficeActivity::class.java).putExtra(OfficeActivity.EXTRA_PATH, f.path))

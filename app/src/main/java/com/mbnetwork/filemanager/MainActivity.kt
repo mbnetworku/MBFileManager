@@ -267,6 +267,7 @@ class MainActivity : AppCompatActivity() {
         if (bigScreen) (mini.layoutParams as android.widget.FrameLayout.LayoutParams).bottomMargin = (12 * d).toInt()
         findViewById<View>(R.id.miniPlay).setOnClickListener { MusicPlayer.toggle() }
         findViewById<View>(R.id.miniNext).setOnClickListener { MusicPlayer.next() }
+        findViewById<View>(R.id.miniClose).setOnClickListener { MusicPlayer.stop() }   // ✕ stops the music and hides the bar
 
         // tap = open the player, swipe down = hide the bar (the music keeps playing)
         mini.setOnTouchListener(object : View.OnTouchListener {

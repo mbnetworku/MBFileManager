@@ -50,6 +50,7 @@ app/src/main/java/com/mbnetwork/filemanager/
   MusicPlayer.kt, MusicService.kt, PlayerActivity.kt, EqualizerView.kt   music
   PhotoViewerActivity.kt, ZoomImageView.kt, PhotoEditorActivity.kt, EditorCanvas.kt, ImageUtil.kt   photos
   VideoPlayerActivity.kt, VideoEditorActivity.kt, VideoTrimmer.kt   video
+  PdfActivity.kt, DocxToPdf.kt                                       PDF reader/editor (PdfRenderer + PdfDocument), docx -> pdf
   BgRemover.kt                                                       on-device background removal (k-means + flood fill magic wand, PNG output)
   OfficeActivity.kt, OfficeDoc.kt   Word / Excel / PowerPoint viewer + editor (OOXML = zipped XML)
   TextEditorActivity.kt    notepad

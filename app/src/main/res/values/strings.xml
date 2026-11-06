@@ -302,4 +302,18 @@
     <string name="ai_tolerance">Tolerance</string>
     <string name="ai_bg_removed">Background removed. The photo will be saved as PNG to keep it transparent.</string>
     <string name="speed">Speed</string>
+    <string name="pdf_failed">This PDF could not be opened (it may be protected or damaged).</string>
+    <string name="pdf_edit_hint">Draw with your finger, or pick T and tap the page to type text. Pinch to zoom when not drawing.</string>
+    <string name="color">Colour</string>
+    <string name="pdf_text_hint">Type your text</string>
+    <string name="pdf_add_text">Add text</string>
+    <string name="pdf_nothing">Nothing to save yet.</string>
+    <string name="pdf_saving">Saving PDF…</string>
+    <string name="pdf_saved">Saved as %s</string>
+    <string name="pdf_unsaved">Save your changes to this PDF?</string>
+    <string name="open_pdf">Open PDF</string>
+    <string name="convert_pdf">Convert to PDF</string>
+    <string name="converting">Converting to PDF…</string>
+    <string name="convert_failed">Could not convert this document.</string>
+    <string name="mini_close">Stop music</string>
 </resources>

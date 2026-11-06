@@ -3,6 +3,9 @@ package com.mbnetwork.filemanager
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -57,6 +60,36 @@ class VideoPlayerActivity : AppCompatActivity() {
     private var dragging = false
     private var barsOn = true
 
+    private lateinit var flash: TextView
+    private lateinit var centerRow: View
+    private val hideBars = Runnable { if (video.isPlaying && !dragging) showBars(false) }
+
+    private fun glass(radiusDp: Int, color: Int = 0x8C000000.toInt()) = GradientDrawable().apply {
+        setColor(color); cornerRadius = UiKit.dp(this@VideoPlayerActivity, radiusDp).toFloat()
+    }
+
+    private fun circle(btn: ImageButton, sizeDp: Int, pad: Int): ImageButton {
+        btn.background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0x8C000000.toInt()) }
+        val s = UiKit.dp(this, sizeDp)
+        btn.layoutParams = LinearLayout.LayoutParams(s, s).apply { setMargins(UiKit.dp(this@VideoPlayerActivity, 6), 0, UiKit.dp(this@VideoPlayerActivity, 6), 0) }
+        val p = UiKit.dp(this, pad); btn.setPadding(p, p, p, p)
+        return btn
+    }
+
+    private fun scheduleHide() {
+        handler.removeCallbacks(hideBars)
+        if (barsOn) handler.postDelayed(hideBars, 3500)
+    }
+
+    private fun flashText(t: String, right: Boolean) {
+        flash.text = t
+        (flash.layoutParams as FrameLayout.LayoutParams).gravity = Gravity.CENTER_VERTICAL or (if (right) Gravity.END else Gravity.START)
+        flash.requestLayout()
+        flash.animate().cancel()
+        flash.alpha = 1f
+        flash.animate().alpha(0f).setStartDelay(450).setDuration(300).start()
+    }
+
     private val ticker = object : Runnable {
         override fun run() {
             if (prepared && !dragging) {
@@ -86,26 +119,46 @@ class VideoPlayerActivity : AppCompatActivity() {
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         video = VideoView(this)
         root.addView(video, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER))
-        root.addView(View(this).apply { setOnClickListener { toggleBars() } },
-            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        val gestures = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent) = true
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean { toggleBars(); return true }
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                if (!prepared) return true
+                val right = e.x > video.width / 2f
+                val t = (video.currentPosition + (if (right) 10000 else -10000)).coerceIn(0, video.duration)
+                video.seekTo(t); seek.progress = t; tCur.text = fmt(t)
+                flashText(if (right) "+10 s  ⏩" else "⏪  -10 s", right)
+                return true
+            }
+        })
+        root.addView(View(this).apply {
+            setOnTouchListener { _, ev -> gestures.onTouchEvent(ev); true }
+        }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        flash = TextView(this).apply {
+            textSize = 18f; setTextColor(Color.WHITE); alpha = 0f
+            background = glass(26)
+            setPadding(UiKit.dp(context, 18), UiKit.dp(context, 10), UiKit.dp(context, 18), UiKit.dp(context, 10))
+        }
+        root.addView(flash, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL)
+            .apply { setMargins(UiKit.dp(this@VideoPlayerActivity, 36), 0, UiKit.dp(this@VideoPlayerActivity, 36), 0) })
 
         topBar = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
-            background = UiKit.scrim(true)
-            setPadding(UiKit.dp(context, 6), UiKit.dp(context, 4), UiKit.dp(context, 6), UiKit.dp(context, 16))
-            addView(UiKit.iconButton(context, R.drawable.ic_back_white, getString(R.string.close)) { finish() })
+            setPadding(UiKit.dp(context, 10), UiKit.dp(context, 10), UiKit.dp(context, 10), UiKit.dp(context, 10))
+            addView(circle(UiKit.iconButton(context, R.drawable.ic_back_white, getString(R.string.close)) { finish() }, 44, 11))
             titleView = TextView(context).apply {
-                text = f.name; textSize = 16f; setTextColor(Color.WHITE); maxLines = 1
+                text = f.name; textSize = 15f; setTextColor(Color.WHITE); maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.MIDDLE
-                setPadding(UiKit.dp(context, 6), 0, UiKit.dp(context, 6), 0)
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                background = glass(22)
+                setPadding(UiKit.dp(context, 16), UiKit.dp(context, 10), UiKit.dp(context, 16), UiKit.dp(context, 10))
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { setMargins(UiKit.dp(context, 6), 0, UiKit.dp(context, 6), 0) }
             }
             addView(titleView)
-            addView(UiKit.iconButton(context, R.drawable.ic_edit, getString(R.string.edit_video)) {
+            addView(circle(UiKit.iconButton(context, R.drawable.ic_edit, getString(R.string.edit_video)) {
                 video.pause()
                 startActivity(Intent(context, VideoEditorActivity::class.java).putExtra(VideoEditorActivity.EXTRA_PATH, path))
-            })
-            addView(UiKit.iconButton(context, R.drawable.ic_share, getString(R.string.share)) { share() })
+            }, 44, 11))
+            addView(circle(UiKit.iconButton(context, R.drawable.ic_share, getString(R.string.share)) { share() }, 44, 11))
         }
         root.addView(topBar, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP))
 
@@ -119,35 +172,44 @@ class VideoPlayerActivity : AppCompatActivity() {
                 override fun onStopTrackingTouch(s: SeekBar) { dragging = false; video.seekTo(s.progress) }
             })
         }
-        play = UiKit.iconButton(this, R.drawable.ic_pause, getString(R.string.play)) { togglePlay() }
-        prevBtn = UiKit.iconButton(this, R.drawable.ic_prev, getString(R.string.previous)) { openAt(index - 1) }
-        nextBtn = UiKit.iconButton(this, R.drawable.ic_next, getString(R.string.next)) { openAt(index + 1) }
+        play = circle(UiKit.iconButton(this, R.drawable.ic_pause, getString(R.string.play)) { togglePlay(); scheduleHide() }, 72, 20)
+        prevBtn = circle(UiKit.iconButton(this, R.drawable.ic_prev, getString(R.string.previous)) { openAt(index - 1) }, 52, 14)
+        nextBtn = circle(UiKit.iconButton(this, R.drawable.ic_next, getString(R.string.next)) { openAt(index + 1) }, 52, 14)
         speedBtn = TextView(this).apply {
             text = "1x"; textSize = 14f; setTextColor(Color.WHITE); gravity = Gravity.CENTER
             contentDescription = getString(R.string.speed)
-            setPadding(UiKit.dp(context, 10), UiKit.dp(context, 8), UiKit.dp(context, 10), UiKit.dp(context, 8))
+            background = glass(18, 0x33FFFFFF)
+            setPadding(UiKit.dp(context, 14), UiKit.dp(context, 7), UiKit.dp(context, 14), UiKit.dp(context, 7))
             setOnClickListener { cycleSpeed() }
         }
         updateNav()
+        seek.progressTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+        seek.thumbTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+        seek.progressBackgroundTintList = android.content.res.ColorStateList.valueOf(0x55FFFFFF)
+
+        centerRow = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+            addView(prevBtn); addView(play); addView(nextBtn)
+        }
+        root.addView(centerRow, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
+
         bottomBar = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = UiKit.scrim(false)
-            setPadding(UiKit.dp(context, 16), UiKit.dp(context, 18), UiKit.dp(context, 16), UiKit.dp(context, 10))
+            background = glass(28)
+            setPadding(UiKit.dp(context, 18), UiKit.dp(context, 10), UiKit.dp(context, 18), UiKit.dp(context, 8))
             addView(LinearLayout(context).apply {
                 gravity = Gravity.CENTER_VERTICAL
                 addView(tCur); addView(seek); addView(tDur)
             })
             addView(LinearLayout(context).apply {
                 gravity = Gravity.CENTER
-                addView(prevBtn)
                 addView(holdable(UiKit.iconButton(context, R.drawable.ic_replay_10, "-10") { video.seekTo((video.currentPosition - 10000).coerceAtLeast(0)) }, -1))
-                addView(play)
-                addView(holdable(UiKit.iconButton(context, R.drawable.ic_forward_10, "+10") { video.seekTo((video.currentPosition + 10000).coerceAtMost(video.duration)) }, 1))
-                addView(nextBtn)
                 if (android.os.Build.VERSION.SDK_INT >= 23) addView(speedBtn)
+                addView(holdable(UiKit.iconButton(context, R.drawable.ic_forward_10, "+10") { video.seekTo((video.currentPosition + 10000).coerceAtMost(video.duration)) }, 1))
             })
         }
-        root.addView(bottomBar, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
+        root.addView(bottomBar, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM)
+            .apply { setMargins(UiKit.dp(this@VideoPlayerActivity, 14), 0, UiKit.dp(this@VideoPlayerActivity, 14), UiKit.dp(this@VideoPlayerActivity, 14)) })
         setContentView(root)
 
         video.setOnPreparedListener { mp ->
@@ -224,10 +286,11 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     private fun showBars(on: Boolean) {
         barsOn = on
-        listOf(topBar, bottomBar).forEach { v ->
+        listOf(topBar, bottomBar, centerRow).forEach { v ->
             if (on) v.visibility = View.VISIBLE
             v.animate().alpha(if (on) 1f else 0f).setDuration(180).withEndAction { if (!barsOn) v.visibility = View.GONE }.start()
         }
+        scheduleHide()
     }
 
     private fun share() {
@@ -250,7 +313,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         if (prepared) { video.seekTo(resumePos); if (wasPlaying) video.start() }
     }
 
-    override fun onDestroy() { handler.removeCallbacks(ticker); handler.removeCallbacks(scanner); super.onDestroy() }
+    override fun onDestroy() { handler.removeCallbacks(ticker); handler.removeCallbacks(scanner); handler.removeCallbacks(hideBars); super.onDestroy() }
 
     override fun finish() { super.finish(); DeviceUi.exitSlide(this) }
 
