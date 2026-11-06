@@ -403,7 +403,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     /** "Move to folder..." / "Copy to folder...": pick the destination on the phone, SD card or USB drive. */
     private fun pickFolder(items: List<FileItem>, move: Boolean) {
         FolderPicker.show(requireContext(), currentPath, getString(if (move) R.string.move_to_folder else R.string.copy_to_folder)) { dest ->
-            runOp { items.forEach { if (move) ops.move(it.path, dest) else ops.copy(it.path, dest) } }
+            runWithProgress(getString(if (move) R.string.op_move else R.string.op_copy), items.map { it.path }) { p -> if (move) ops.move(p, dest) else ops.copy(p, dest) }
             exitSelect()
         }
     }
@@ -760,9 +760,9 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         val b = MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.delete)
             .setMessage(getString(R.string.n_items, items.size))
         if (canBin) {
-            b.setPositiveButton(R.string.move_to_bin) { _, _ -> runOp { items.forEach { Trash.moveToTrash(ctx, it.path) } } }
-                .setNeutralButton(R.string.delete_forever) { _, _ -> runOp { items.forEach { ops.delete(it.path) } } }
-        } else b.setPositiveButton(R.string.delete_forever) { _, _ -> runOp { items.forEach { ops.delete(it.path) } } }
+            b.setPositiveButton(R.string.move_to_bin) { _, _ -> runWithProgress(getString(R.string.op_delete), items.map { it.path }) { p -> Trash.moveToTrash(ctx, p) } }
+                .setNeutralButton(R.string.delete_forever) { _, _ -> runWithProgress(getString(R.string.op_delete), items.map { it.path }) { p -> ops.delete(p) } }
+        } else b.setPositiveButton(R.string.delete_forever) { _, _ -> runWithProgress(getString(R.string.op_delete), items.map { it.path }) { p -> ops.delete(p) } }
         b.setNegativeButton(R.string.cancel, null).show()
         exitSelect()
     }
@@ -770,9 +770,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private fun paste() {
         val c = clip ?: return
         val dest = currentPath
-        runOp {
-            c.paths.forEach { if (c.cut) ops.move(it, dest) else ops.copy(it, dest) }
-        }
+        runWithProgress(getString(if (c.cut) R.string.op_move else R.string.op_copy), c.paths) { p -> if (c.cut) ops.move(p, dest) else ops.copy(p, dest) }
         clip = null
         updateFab()
     }
@@ -818,6 +816,30 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 if (name.isNotEmpty() && !name.contains('/')) runOp { action(name) }
             }
             .setNegativeButton(R.string.cancel, null).show()
+    }
+
+    /**
+     * Copy / move / delete many items with a progress bar: in the app (can be hidden) and in the notification.
+     * Progress is counted per item.
+     */
+    private fun runWithProgress(title: String, paths: List<String>, action: (String) -> Unit) {
+        if (paths.isEmpty()) return
+        val act = requireActivity()
+        OpProgress.start(title, paths.size)
+        ContextCompat.startForegroundService(act, Intent(act, OpService::class.java))
+        act.lifecycleScope.launch {
+            var failed: String? = null
+            withContext(Dispatchers.IO) {
+                for (p in paths) {
+                    try { action(p) } catch (e: Throwable) { failed = e.message ?: "error" }
+                    OpProgress.step()
+                }
+            }
+            val msg = failed?.let { getString(R.string.failed, it) } ?: getString(R.string.done)
+            OpProgress.finish(msg)
+            if (failed != null) Toast.makeText(act, msg, Toast.LENGTH_LONG).show()
+            refresh()
+        }
     }
 
     /** Runs a file operation in the background, reports the result and refreshes the list. */

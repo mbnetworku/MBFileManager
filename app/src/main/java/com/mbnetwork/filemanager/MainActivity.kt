@@ -75,6 +75,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<GlassView>(R.id.topGlass).setup(container, shape = GlassView.SHAPE_NONE, rim = GlassView.RIM_BOTTOM, tintAlpha = 0.62f)
         findViewById<GlassView>(R.id.bottomGlass).setup(container, capsule = true, tintAlpha = 0.58f)
         setupMini(container, bigScreen)
+        findViewById<GlassView>(R.id.opGlass).setup(container, radiusDp = 22f, tintAlpha = 0.66f)
+        findViewById<View>(R.id.opHide).setOnClickListener { OpProgress.hide() }
         findViewById<GlassView>(R.id.drawerPanel).setup(findViewById(R.id.root), radiusDp = 28f, tintAlpha = 0.80f)
 
         // Sidebar (hidden until opened with the ☰ button or a swipe from the left edge)
@@ -201,6 +203,8 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         MusicPlayer.addObserver(miniObserver)
+        OpProgress.addListener(opObserver)
+        updateOpBar()
         updateMini()
         knownVolumes = StorageVolumes.list(this).map { it.path }.toSet()
         val media = android.content.IntentFilter().apply {
@@ -229,6 +233,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         MusicPlayer.removeObserver(miniObserver)
+        OpProgress.removeListener(opObserver)
         try { unregisterReceiver(mediaReceiver); unregisterReceiver(usbReceiver) } catch (e: Exception) { }
     }
 
@@ -256,6 +261,24 @@ class MainActivity : AppCompatActivity() {
         } else {
             toggle.isDrawerIndicatorEnabled = true
         }
+    }
+
+    // ------------------------------------------------------------------ copy / move / delete progress bar
+
+    private val opObserver: () -> Unit = { updateOpBar() }
+
+    /** Shows the bar only while an operation runs and was not hidden by the user. */
+    private fun updateOpBar() {
+        val bar = findViewById<View>(R.id.opGlass) ?: return
+        val show = OpProgress.active && !OpProgress.hidden
+        if (!show) { if (bar.visibility == View.VISIBLE) bar.visibility = View.GONE; return }
+        findViewById<TextView>(R.id.opTitle).text = OpProgress.title
+        findViewById<TextView>(R.id.opCount).text = getString(R.string.op_count, OpProgress.done, OpProgress.total)
+        val bp = findViewById<android.widget.ProgressBar>(R.id.opBar)
+        bp.max = OpProgress.total.coerceAtLeast(1)
+        bp.progress = OpProgress.done
+        bp.isIndeterminate = OpProgress.total <= 0
+        bar.visibility = View.VISIBLE
     }
 
     // ------------------------------------------------------------------ mini player

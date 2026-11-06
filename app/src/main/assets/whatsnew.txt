@@ -1,3 +1,6 @@
+## 2.9.0.029
+- New: a progress bar for copy, move and delete. You can hide it with its X; it stays in the notification with a progress bar, and a short "Done" notice appears when it finishes.
+- Fixed: the music player in landscape (cover and controls now sit side by side).
 ## 2.9.0.028
 - Fixed: Google Drive, OneDrive and Dropbox sign-in. It now works through the official cloud apps on your phone (normal sign-in, personal and Microsoft 365 accounts) - no keys needed.
 ## 2.9.0.027

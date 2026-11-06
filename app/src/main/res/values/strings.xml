@@ -398,4 +398,10 @@
     <string name="cloud_storage">Cloud storage</string>
     <string name="saf_message">Sign in the normal way with the official %1$s app on this phone (personal or Microsoft 365 work accounts). In the next window open the menu (≡), choose %2$s, then tap "Use this folder". If it is not in the list, install the official app from Google Play and sign in there once.</string>
     <string name="saf_continue">Continue</string>
+    <string name="op_copy">Copying</string>
+    <string name="op_move">Moving</string>
+    <string name="op_delete">Deleting</string>
+    <string name="op_count">%1$d of %2$d</string>
+    <string name="hide_bar">Hide progress</string>
+    <string name="op_channel">File operations</string>
 </resources>

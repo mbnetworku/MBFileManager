@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Only to read the loudness of the app's own music for the equalizer (nothing is recorded) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -68,6 +69,11 @@
             android:name=".MusicService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+        <!-- copy / move / delete progress in the notification -->
+        <service
+            android:name=".OpService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         <activity
             android:name=".PlayerActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
