@@ -13,7 +13,7 @@ import kotlin.math.abs
 /** Animated equalizer bars. They dance while music plays and settle down when it is paused. */
 class EqualizerView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet? = null) : View(ctx, attrs) {
 
-    private val count = 30
+    private val count = 22
     private val cur = FloatArray(count) { 0.06f }
     private val tgt = FloatArray(count) { 0.06f }
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -100,10 +100,10 @@ class EqualizerView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet?
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
-        paint.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(0xFF7DD3FC.toInt(), 0xFF0A84FF.toInt(), 0xFF7DD3FC.toInt()),
+        paint.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(0xFFFFFFFF.toInt(), 0xFF64D2FF.toInt(), 0xFFFFFFFF.toInt()),
             floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
         val gap = w / count
-        val bw = when (style) { 1 -> gap * 0.18f; 2 -> gap * 0.42f; else -> gap * 0.55f }
+        val bw = when (style) { 1 -> gap * 0.2f; 2 -> gap * 0.42f; else -> gap * 0.6f }
         for (i in 0 until count) {
             val bh = (h * cur[i]).coerceAtLeast(bw)
             val x = i * gap + (gap - bw) / 2f

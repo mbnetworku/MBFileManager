@@ -1,3 +1,5 @@
+## 2.9.0.033
+- Music player on car radios: bigger, white text for the song title, folder, time and song list, and a clearer equalizer (fewer, thicker bars in white and blue).
 ## 2.9.0.032
 - New look for the music player: the background takes the colour of the song's cover and changes smoothly between songs; liquid-glass panels; a white play button; buttons that press in and spring back; the title fades in on each song. Same controls and layout.
 ## 2.9.0.031

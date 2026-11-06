@@ -305,8 +305,8 @@ class PlayerActivity : AppCompatActivity() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val ctx = this@PlayerActivity
             val icon = ImageView(ctx).apply { layoutParams = LinearLayout.LayoutParams(px(40), px(40)) }
-            val name = TextView(ctx).apply { textSize = 16f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
-            val sub = TextView(ctx).apply { textSize = 12f; setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary)) }
+            val name = TextView(ctx).apply { textSize = 18f; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
+            val sub = TextView(ctx).apply { textSize = 14f; setTextColor(0xFFE5E5EA.toInt()) }
             val del = ImageButton(ctx).apply {
                 setImageResource(R.drawable.ic_delete)
                 ImageViewCompat.setImageTintList(this, ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.danger)))
@@ -338,7 +338,7 @@ class PlayerActivity : AppCompatActivity() {
             val f = MusicPlayer.queue[position]
             val current = position == MusicPlayer.index
             h.name.text = f.nameWithoutExtension
-            h.name.setTextColor(ContextCompat.getColor(h.row.context, if (current) R.color.brand else R.color.label))
+            h.name.setTextColor(if (current) 0xFF64D2FF.toInt() else 0xFFFFFFFF.toInt())
             h.name.setTypeface(null, if (current) Typeface.BOLD else Typeface.NORMAL)
             h.sub.text = if (current) getString(R.string.now_playing) else f.extension.uppercase()
             h.icon.setImageDrawable(FileIcons.drawable(FileItem(f.name, f.absolutePath, false, 0, 0)))
