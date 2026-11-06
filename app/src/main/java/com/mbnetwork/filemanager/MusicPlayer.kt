@@ -39,9 +39,29 @@ object MusicPlayer {
     val duration get() = try { player?.duration ?: 0 } catch (e: Exception) { 0 }
 
     /** Plays [file]; every audio file in the same folder becomes the playlist. */
+    /** Every song on the phone (no limit), from the media library. Empty when it cannot be read. */
+    fun library(ctx: Context): List<File> {
+        val out = ArrayList<File>()
+        try {
+            ctx.contentResolver.query(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(android.provider.MediaStore.Audio.Media.DATA), null, null,
+                "${android.provider.MediaStore.Audio.Media.TITLE} COLLATE NOCASE")?.use { c ->
+                while (c.moveToNext()) {
+                    val p = c.getString(0) ?: continue
+                    val f = File(p)
+                    if (f.isFile && isAudio(f.name)) out += f
+                }
+            }
+        } catch (e: Throwable) { }
+        return out
+    }
+
+    /** Plays the tapped song with ALL songs on the phone as the queue (falls back to the folder if needed). */
     fun playFolder(file: File) {
-        val songs = file.parentFile?.listFiles()?.filter { it.isFile && isAudio(it.name) }
-            ?.sortedBy { it.name.lowercase() } ?: listOf(file)
+        val all = appContext?.let { library(it) } ?: emptyList()
+        val songs = if (all.any { it.absolutePath == file.absolutePath }) all else {
+            file.parentFile?.listFiles()?.filter { it.isFile && isAudio(it.name) }?.sortedBy { it.name.lowercase() } ?: listOf(file)
+        }
         queue = songs.ifEmpty { listOf(file) }
         index = queue.indexOfFirst { it.absolutePath == file.absolutePath }.coerceAtLeast(0)
         start()

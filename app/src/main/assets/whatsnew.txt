@@ -1,3 +1,6 @@
+## 2.9.0.034
+- Music: the player now plays from all the songs on your phone (no folder limit), starting with the song you tap.
+- Music player on car radios: the close (X) button moved to the right side so it is not covered.
 ## 2.9.0.033
 - Music player on car radios: bigger, white text for the song title, folder, time and song list, and a clearer equalizer (fewer, thicker bars in white and blue).
 ## 2.9.0.032

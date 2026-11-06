@@ -14,15 +14,6 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <ImageButton
-            android:id="@+id/btnClose"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_round_btn"
-            android:contentDescription="@string/close"
-            android:padding="11dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_close" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/queueList"
@@ -42,6 +33,15 @@
             android:padding="11dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_queue" />
+        <ImageButton
+            android:id="@+id/btnClose"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_round_btn"
+            android:contentDescription="@string/close"
+            android:padding="11dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_close" />
     </LinearLayout>
 
     <!-- bottom: cover and title on the left; equalizer, seek bar and buttons on the right -->
