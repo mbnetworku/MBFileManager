@@ -152,6 +152,7 @@ class MainActivity : AppCompatActivity() {
 
         // Look for a newer version (at most once a day)
         Updater.check(this, lifecycleScope, manual = false)
+        WhatsNew.showIfUpdated(this)      // short message about the newest features and fixes after an update
 
         // Root features exist only on rooted devices.
         if (!RootShell.deviceRooted) prefs.rootMode = false

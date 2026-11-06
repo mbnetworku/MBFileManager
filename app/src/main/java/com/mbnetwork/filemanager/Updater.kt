@@ -60,7 +60,8 @@ object Updater {
                 rel == null -> if (manual) Toast.makeText(activity, R.string.update_failed, Toast.LENGTH_LONG).show()
                 isNewer(rel.version, BuildConfig.VERSION_NAME) -> MaterialAlertDialogBuilder(activity)
                     .setTitle(activity.getString(R.string.update_available, rel.version))
-                    .setMessage(activity.getString(R.string.update_message, BuildConfig.VERSION_NAME, rel.version))
+                    .setMessage(activity.getString(R.string.update_message, BuildConfig.VERSION_NAME, rel.version) +
+                        WhatsNew.forRelease(rel.notes, rel.version).let { if (it.isBlank()) "" else "\n\n" + activity.getString(R.string.whats_new_label) + "\n" + it })
                     .setPositiveButton(R.string.update_now) { _, _ -> download(activity, scope, rel) }
                     .setNegativeButton(R.string.later, null).show()
                 manual -> Toast.makeText(activity, activity.getString(R.string.up_to_date, BuildConfig.VERSION_NAME), Toast.LENGTH_LONG).show()

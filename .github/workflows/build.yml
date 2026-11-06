@@ -62,9 +62,7 @@ jobs:
             MBFileManager-v*.apk
             MBFileManager.apk
           make_latest: true
-          body: |
-            MB File Manager for Android 5.0+.
-            Download the APK below and install it on your phone.
+          body_path: app/src/main/assets/whatsnew.txt
       - name: Android 5 (API 21) compatibility check - lint NewApi (report only, runs when the commit message contains [lint])
         if: contains(github.event.head_commit.message, '[lint]')
         continue-on-error: true

@@ -1,0 +1,28 @@
+## 2.9.0.026
+- New: a short "What's new" message now appears after each update, and also in the update-available window before you update.
+## 2.9.0.025
+- New: "Save to File Manager" - share photos from Google Photos / Gallery and save them into any folder, SD card or USB drive.
+- New filters: PNG images, RAW (.DNG) and Duplicates.
+- New: Photo info (EXIF) in a photo's menu.
+- New: Move to folder... and Copy to folder... with a folder picker.
+- New: drag over items in Select mode to select many at once.
+- New quick folders: Screenshots and WhatsApp Images.
+- New: a short "What's new" message after every update.
+## 2.9.0.024
+- New: Network & cloud - Windows shares (SMB), FTP, FTPS, SFTP, WebDAV, and Google Drive, OneDrive and Dropbox. Find devices on your Wi-Fi.
+## 2.9.0.020
+- New: delete a video from inside the video player.
+- Music: swipe the full player down to get the mini bar; swipe the mini bar down to hide or close it.
+## 2.9.0.018
+- Fixed: Next / Previous in the video player now goes through all videos.
+## 2.9.0.017
+- New: open password-protected PDF, Word, Excel, PowerPoint, ZIP and RAR files; create ZIP files with a password.
+## 2.9.0.016
+- New: open and extract RAR, TAR and TAR.GZ; create TAR and TAR.GZ.
+## 2.9.0.015
+- New: PDF reader with editing (draw, highlight, add text) and Word to PDF.
+- New: modern video player design.
+- New: close (X) button on the music mini bar.
+## 2.9.0.014
+- New: previous / next video, hold to fast-forward, playback speed.
+- New: remove the background of a photo (on the phone, no internet) and a Magic wand.

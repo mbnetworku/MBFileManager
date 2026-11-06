@@ -28,7 +28,7 @@ Technical details are in [TECHNICAL.md](TECHNICAL.md). User-facing text is in [.
 7. Commit messages end with the attribution lines the harness gives. Do not put model names in code or files.
 
 ## Release routine (every change the owner asks for)
-1. Edit code. 2. Raise `versionCode` (+1) and `versionName` (`2.9.0.00N`, N+1) in `app/build.gradle.kts`.
+1. Edit code. 2. Add a `## <new version>` section with short `- ` lines (new features / fixes, plain words) at the TOP of `app/src/main/assets/whatsnew.txt` - the app shows it after the update and the update dialog / GitHub release use the same file. Raise `versionCode` (+1) and `versionName` (`2.9.0.00N`, N+1) in `app/build.gradle.kts`.
 3. `git add -A && git commit && git push -q origin claude/android-file-manager-app-vazx9g`.
 4. Wait ~3 min (`sleep` in background), check the build, fix errors if red.
 5. Tell the owner the download link: `https://github.com/mbnetworku/MBFileManager/releases/latest/download/MBFileManager.apk`.
@@ -75,5 +75,7 @@ USB → `UsbToolsActivity.kt` + `FatFormatter.kt`; CI → `.github/workflows/bui
 - [ ] Colours from `values/colors.xml` (light + night), rounded corners, glass bars not covered (`topInset` / `bottomInset`).
 - [ ] Strings in `res/values/strings.xml` (no duplicates – grep first).
 - [ ] New activity registered in `AndroidManifest.xml`; permissions added only if needed.
-- [ ] Version bumped, README feature list and `docs/TECHNICAL.md` updated.
+- [ ] `assets/whatsnew.txt` has a section for this version. Version bumped, README feature list and `docs/TECHNICAL.md` updated.
 - [ ] Pushed, CI green, owner told what to test.
+
+* Owner decision: **do not change the existing UI** when adding features; only add. (Pink is not a concern for the owner any more, but keep the current palette.)
