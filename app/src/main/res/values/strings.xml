@@ -359,7 +359,7 @@
     <string name="conn_pass_keep">Password (empty = keep the saved one)</string>
     <string name="conn_share">Share name, for example Public or Public/Movies</string>
     <string name="conn_folder">Start folder (optional)</string>
-    <string name="smb_hint">Tip: use the PC name or its IP address. For a domain user write DOMAIN\user.</string>
+    <string name="smb_hint">Tip: use the PC name or its IP address. For a domain user write DOMAIN\\user.</string>
     <string name="conn_failed">Could not connect or read: %1$s</string>
     <string name="folder_empty">This folder is empty</string>
     <string name="upload_files">Upload files</string>
