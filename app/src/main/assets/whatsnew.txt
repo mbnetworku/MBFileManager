@@ -1,3 +1,5 @@
+## 2.9.0.036
+- Fixed: when you open a video, the music is paused so it does not play at the same time.
 ## 2.9.0.035
 - Music library: shows the folders that contain music first, then all the songs.
 ## 2.9.0.034

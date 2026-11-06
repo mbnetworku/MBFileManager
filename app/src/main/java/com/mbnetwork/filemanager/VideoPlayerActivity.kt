@@ -237,8 +237,14 @@ class VideoPlayerActivity : AppCompatActivity() {
         video.setOnErrorListener { _, _, _ ->
             Toast.makeText(this, R.string.video_failed, Toast.LENGTH_LONG).show(); prepared = false; true
         }
+        stopMusic()
         video.setVideoPath(path)
         handler.post(ticker)
+    }
+
+    /** A video takes over: the background music is paused so the two never play together. */
+    private fun stopMusic() {
+        if (MusicPlayer.isPlaying) MusicPlayer.toggle()
     }
 
     private fun openAt(i: Int) {
@@ -352,6 +358,7 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        stopMusic()
         if (prepared) { video.seekTo(resumePos); if (wasPlaying) video.start() }
     }
 
