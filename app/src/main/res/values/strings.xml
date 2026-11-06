@@ -327,4 +327,45 @@
     <string name="mini_ask">What do you want to do with the music bar?</string>
     <string name="mini_hide">Hide the bar (music keeps playing)</string>
     <string name="mini_stop">Close and stop the music</string>
+    <string name="network_cloud">Network &amp; cloud</string>
+    <string name="local_network">Local network</string>
+    <string name="cloud">Cloud</string>
+    <string name="add_connection">Add a server</string>
+    <string name="add_connection_sub">Windows share (SMB), FTP, SFTP, WebDAV</string>
+    <string name="scan_network">Find devices on this Wi-Fi</string>
+    <string name="scan_network_sub">Looks for PCs, NAS boxes and routers that share files</string>
+    <string name="scanning">Looking for devices on %1$s …</string>
+    <string name="scan_found">Found on your network</string>
+    <string name="scan_none">No file-sharing devices found. Are you on Wi-Fi?</string>
+    <string name="no_wifi">Connect to a Wi-Fi network first.</string>
+    <string name="tap_sign_in">Tap to sign in</string>
+    <string name="tap_setup">Tap to set up (needs your own app key)</string>
+    <string name="connected">Connected</string>
+    <string name="sign_out">Sign out</string>
+    <string name="remove">Remove</string>
+    <string name="change_keys">Change app keys</string>
+    <string name="cloud_help">How to get the app keys</string>
+    <string name="cloud_help_sub">Step-by-step guide for Google Drive, OneDrive and Dropbox</string>
+    <string name="opening_browser">Opening the browser to sign in to %1$s …</string>
+    <string name="keys_title">%1$s app key</string>
+    <string name="keys_help">Create a free app at %1$s, then paste its Client ID here. Redirect address to register: %2$s</string>
+    <string name="client_id">Client ID</string>
+    <string name="client_secret">Client secret</string>
+    <string name="conn_name">Name (optional)</string>
+    <string name="conn_host">Server address (for example 192.168.1.10)</string>
+    <string name="conn_url">Web address (https://…)</string>
+    <string name="conn_port">Port (empty = %1$d)</string>
+    <string name="conn_user">User name (empty = guest)</string>
+    <string name="conn_pass_keep">Password (empty = keep the saved one)</string>
+    <string name="conn_share">Share name, for example Public or Public/Movies</string>
+    <string name="conn_folder">Start folder (optional)</string>
+    <string name="smb_hint">Tip: use the PC name or its IP address. For a domain user write DOMAIN\user.</string>
+    <string name="conn_failed">Could not connect or read: %1$s</string>
+    <string name="folder_empty">This folder is empty</string>
+    <string name="upload_files">Upload files</string>
+    <string name="uploading">Uploading …</string>
+    <string name="download_to_phone">Download to this phone</string>
+    <string name="saved_to">Saved to %1$s</string>
+    <string name="no_app_for_file">No app can open this file.</string>
+    <string name="old_android_note">Android 5 does not allow saving passwords safely, so you will be asked for the password each time. Cloud accounts need Android 6 or newer.</string>
 </resources>

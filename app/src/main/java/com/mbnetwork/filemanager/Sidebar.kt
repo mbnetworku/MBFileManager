@@ -56,6 +56,9 @@ class Sidebar(private val act: MainActivity, private val box: LinearLayout) {
         row(act.getString(R.string.usb_tools), R.drawable.ic_usb, R.color.t_ppt) {
             act.closeDrawer(); act.startActivity(android.content.Intent(act, UsbToolsActivity::class.java))
         }
+        row(act.getString(R.string.network_cloud), R.drawable.ic_cloud, R.color.brand) {
+            act.closeDrawer(); act.startActivity(android.content.Intent(act, com.mbnetwork.filemanager.remote.RemoteHomeActivity::class.java))
+        }
         section(R.string.quick_access)
         listOf(
             Triple(R.string.downloads, Environment.DIRECTORY_DOWNLOADS, R.drawable.ic_archive to R.color.t_doc),

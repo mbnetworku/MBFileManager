@@ -259,6 +259,9 @@ class HomeFragment : Fragment(), Refreshable {
         addRow(group, row(iconView(R.drawable.ic_usb, color(R.color.t_audio)), getString(R.string.usb_tools)) {
             startActivity(android.content.Intent(requireContext(), UsbToolsActivity::class.java))
         })
+        addRow(group, row(iconView(R.drawable.ic_cloud, color(R.color.brand)), getString(R.string.network_cloud)) {
+            startActivity(android.content.Intent(requireContext(), com.mbnetwork.filemanager.remote.RemoteHomeActivity::class.java))
+        })
         addRow(group, row(iconView(R.drawable.ic_zip, color(R.color.brand)), getString(R.string.obb_folder)) {
             main.openLocation("$internal/Android/obb")
         })

@@ -19,8 +19,8 @@ jobs:
           if grep -nE "java\.net|HttpURLConnection|HttpsURLConnection|okhttp|WebView|https?://|URL\(" $FILES; then
             echo "::error::Network code found in an editing / AI file"; exit 1
           fi
-          if grep -nEi "mlkit|firebase|play-services|openai|anthropic|retrofit|okhttp" app/build.gradle.kts; then
-            echo "::error::Online AI / network library found"; exit 1
+          if grep -nEi "mlkit|firebase|play-services|openai|anthropic|retrofit" app/build.gradle.kts; then
+            echo "::error::Online AI library found (okhttp is allowed on purpose: it is used by the Network & cloud package only)"; exit 1
           fi
           echo "OK: editing and AI code is offline"
       - uses: actions/setup-java@v5

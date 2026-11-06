@@ -24,6 +24,7 @@ Technical details are in [TECHNICAL.md](TECHNICAL.md). User-facing text is in [.
    **Updates must never be blocked** (do not add a global network block). Never add network calls, cloud AI, ML Kit, Firebase or Play
    Services to the existing editing / AI code (the CI "Offline guarantee" step fails the build). If the owner asks for an online AI
    feature, build it separately (own package, the user's own API key), make it check `Net.aiBlocked` first, and update the CI guard on purpose.
+   (Done for the Network & cloud package `remote/`: okhttp is allowed in `app/build.gradle.kts`, but the editing / AI files are still guarded against `okhttp` and all network code.)
 7. Commit messages end with the attribution lines the harness gives. Do not put model names in code or files.
 
 ## Release routine (every change the owner asks for)

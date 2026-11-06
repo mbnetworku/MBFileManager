@@ -50,6 +50,7 @@ app/src/main/java/com/mbnetwork/filemanager/
   MusicPlayer.kt, MusicService.kt, PlayerActivity.kt, EqualizerView.kt   music
   PhotoViewerActivity.kt, ZoomImageView.kt, PhotoEditorActivity.kt, EditorCanvas.kt, ImageUtil.kt   photos
   VideoPlayerActivity.kt, VideoEditorActivity.kt, VideoTrimmer.kt   video
+  remote/*.kt  Network & cloud: RemoteFs (SMB jcifs-ng, FTP commons-net, SFTP jsch, WebDAV / cloud okhttp), OAuth PKCE on http://localhost:53682/, Secrets (Keystore)
   OfficeCrypt.java (Agile decrypt, tested against msoffcrypto), OfficeUnlock.kt, PasswordDialog.kt
   ArchiveUtil.kt (zip4j for password zips, zip/tar/tgz/rar, junrar 7.5.5), ZipUtil.kt
   PdfActivity.kt, DocxToPdf.kt                                       PDF reader/editor (PdfRenderer + PdfDocument), docx -> pdf
