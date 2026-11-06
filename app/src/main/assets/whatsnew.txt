@@ -1,3 +1,5 @@
+## 2.9.0.032
+- New look for the music player: the background takes the colour of the song's cover and changes smoothly between songs; liquid-glass panels; a white play button; buttons that press in and spring back; the title fades in on each song. Same controls and layout.
 ## 2.9.0.031
 - Music player in landscape (car radios): song list across the top, equalizer and playback buttons below. Tap the equalizer to change its look (bars, lines or dots).
 ## 2.9.0.030

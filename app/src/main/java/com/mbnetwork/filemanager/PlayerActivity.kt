@@ -1,5 +1,9 @@
 package com.mbnetwork.filemanager
 
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -41,6 +45,62 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var cover: android.widget.ImageView
     private lateinit var equalizer: EqualizerView
     private var shownCover: String? = null
+    private var shownBg: String? = null
+    private var bgView: View? = null
+    private var bgCurrent: android.graphics.drawable.Drawable? = null
+
+    /** Apple-Music-like look: colour background from the cover, glass panels, white play button, press animations. */
+    private fun applyDesign() {
+        val root = (findViewById<ViewGroup>(android.R.id.content)).getChildAt(0)
+        bgView = root
+        val first = PlayerDesign.gradient(PlayerDesign.DEFAULT_TOP, PlayerDesign.DEFAULT_BOTTOM)
+        bgCurrent = first
+        root.background = first
+        equalizer.background = PlayerDesign.glassPanel(this, 22f)
+        (play.parent as? View)?.let { it.background = PlayerDesign.glassPanel(this, 30f); it.setPadding(px(6), px(6), px(6), px(6)) }
+        play.background = PlayerDesign.whiteCircle()
+        play.imageTintList = ColorStateList.valueOf(0xFF111111.toInt())
+        listOf(R.id.btnShuffle, R.id.btnPrev, R.id.btnNext, R.id.btnRepeat, R.id.btnStop, R.id.btnClose, R.id.btnList).forEach { id ->
+            (findViewById<ImageButton?>(id))?.let { b ->
+                b.background = PlayerDesign.glassCircle(this)
+                b.imageTintList = ColorStateList.valueOf(0xFFFFFFFF.toInt())
+                pressAnimation(b)
+            }
+        }
+        pressAnimation(play)
+    }
+
+    /** Buttons shrink a little while pressed and spring back, like iOS. */
+    private fun pressAnimation(b: View) {
+        b.setOnTouchListener { v, e ->
+            when (e.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> v.animate().scaleX(0.88f).scaleY(0.88f).setDuration(90).start()
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL ->
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(220)
+                        .setInterpolator(android.view.animation.OvershootInterpolator(2f)).start()
+            }
+            false
+        }
+    }
+
+    /** Colour of the background follows the cover of the playing song (cross-fades when the song changes). */
+    private fun updateBackground(f: File?) {
+        val path = f?.absolutePath ?: return
+        if (path == shownBg) return
+        shownBg = path
+        lifecycleScope.launch {
+            val c = withContext(Dispatchers.IO) { PlayerDesign.dominant(path) }
+            if (path != MusicPlayer.current?.absolutePath) return@launch
+            val top = if (c != null) PlayerDesign.shade(c, 0.45f) else PlayerDesign.DEFAULT_TOP
+            val bottom = if (c != null) PlayerDesign.shade(c, 0.9f) else PlayerDesign.DEFAULT_BOTTOM
+            val to = PlayerDesign.gradient(top, bottom)
+            val from = bgCurrent ?: PlayerDesign.gradient(PlayerDesign.DEFAULT_TOP, PlayerDesign.DEFAULT_BOTTOM)
+            bgCurrent = to
+            val td = android.graphics.drawable.TransitionDrawable(arrayOf(from, to))
+            bgView?.background = td
+            td.startTransition(if (Prefs(this@PlayerActivity).animations) 700 else 0)
+        }
+    }
     private var dragging = false
     private var queueDialog: BottomSheetDialog? = null
     private var queueAdapter: QueueAdapter? = null
@@ -86,6 +146,7 @@ class PlayerActivity : AppCompatActivity() {
         play = findViewById(R.id.btnPlay)
         shuffle = findViewById(R.id.btnShuffle)
         repeat = findViewById(R.id.btnRepeat)
+        applyDesign()
         equalizer.setOnClickListener { equalizer.nextStyle() }
         // song list shown at the top in landscape (this view exists only in the landscape layout)
         findViewById<RecyclerView?>(R.id.queueList)?.let { rv ->
@@ -148,7 +209,9 @@ class PlayerActivity : AppCompatActivity() {
     private fun updateUi() {
         if (!MusicPlayer.active && MusicPlayer.queue.isEmpty()) { queueDialog?.dismiss(); finish(); return }
         val f = MusicPlayer.current
-        title.text = f?.nameWithoutExtension ?: "—"
+        val newTitle = f?.nameWithoutExtension ?: "—"
+        if (title.text.toString() != newTitle && Prefs(this).animations) { title.alpha = 0f; title.animate().alpha(1f).setDuration(350).start() }
+        title.text = newTitle
         folder.text = f?.parentFile?.name ?: ""
         count.text = if (MusicPlayer.queue.isNotEmpty()) "${MusicPlayer.index + 1} / ${MusicPlayer.queue.size}" else ""
         dur.text = fmt(MusicPlayer.duration)
@@ -156,6 +219,7 @@ class PlayerActivity : AppCompatActivity() {
         shuffle.alpha = if (MusicPlayer.shuffle) 1f else 0.4f
         repeat.alpha = if (MusicPlayer.repeatOne) 1f else 0.4f
         showCover(f)
+        updateBackground(f)
         // like Apple Music: the cover grows while playing and shrinks when paused
         (cover.parent as? View)?.let { frame ->
             val target = if (MusicPlayer.isPlaying) 1f else 0.86f
