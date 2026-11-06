@@ -1,3 +1,5 @@
+## 2.9.0.037
+- Music stops when another music player starts (audio focus). A short interruption, such as a navigation voice, only pauses it.
 ## 2.9.0.036
 - Fixed: when you open a video, the music is paused so it does not play at the same time.
 ## 2.9.0.035

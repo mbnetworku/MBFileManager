@@ -81,6 +81,7 @@ object MusicPlayer {
                 start()
             } catch (e: Exception) { /* unsupported file */ }
         }
+        requestFocus()
         refreshNotification()
         changed()
     }
@@ -138,7 +139,41 @@ object MusicPlayer {
         return ok
     }
 
+    // ---- audio focus: when another app / player starts music, ours stops (short interruptions only pause)
+    private var focusReq: android.media.AudioFocusRequest? = null
+    private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+        when (change) {
+            AudioManager.AUDIOFOCUS_LOSS -> stop()
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> if (isPlaying) toggle()
+        }
+    }
+
+    private fun requestFocus() {
+        val am = appContext?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                val req = android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setOnAudioFocusChangeListener(focusListener).build()
+                focusReq = req
+                am.requestAudioFocus(req)
+            } else {
+                @Suppress("DEPRECATION")
+                am.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+            }
+        } catch (e: Throwable) { }
+    }
+
+    private fun abandonFocus() {
+        val am = appContext?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 26) focusReq?.let { am.abandonAudioFocusRequest(it) }
+            else @Suppress("DEPRECATION") am.abandonAudioFocus(focusListener)
+        } catch (e: Throwable) { }
+        focusReq = null
+    }
+
     fun stop() {
+        abandonFocus()
         player?.release(); player = null
         changed()
     }
