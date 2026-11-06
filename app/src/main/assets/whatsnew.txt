@@ -1,3 +1,5 @@
+## 2.9.0.035
+- Music library: shows the folders that contain music first, then all the songs.
 ## 2.9.0.034
 - Music: the player now plays from all the songs on your phone (no folder limit), starting with the song you tap.
 - Music player on car radios: the close (X) button moved to the right side so it is not covered.

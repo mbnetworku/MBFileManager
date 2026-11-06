@@ -56,6 +56,14 @@ object FileIndex {
                     .map { FileItem(it.name, it.absolutePath, it.isDirectory, if (it.isDirectory) 0 else it.length(), it.lastModified()) }
                     .sortedByDescending { it.lastModified }
             }
+            "aud" -> {
+                // Music: first the folders that contain music, then every song (no limit)
+                val songs = MusicPlayer.library(ctx).map { FileItem(it.name, it.absolutePath, false, it.length(), it.lastModified()) }
+                val folders = songs.mapNotNull { File(it.path).parentFile }.distinct()
+                    .sortedBy { it.name.lowercase() }
+                    .map { FileItem(it.name, it.absolutePath, true, 0, it.lastModified()) }
+                folders + songs.sortedBy { it.name.lowercase() }
+            }
             "dup" -> {
                 val media = (categories.first { it.key == "img" }.exts + categories.first { it.key == "vid" }.exts)
                 val (s, a) = extSel(media)
