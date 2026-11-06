@@ -367,17 +367,19 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     }
 
     /** Long-press: in Select mode toggles the item, otherwise opens the action sheet for it. */
+    /** Long-press selects the item and keeps the finger down: drag over more items to select them all. */
     private fun onItemLongClick(f: FileItem, anchor: View) {
-        if (adapter.selectionMode) {
-            adapter.toggle(f); updateSelectionUi()
-            // keep the finger down and drag over more items to select (or un-select) them all
-            dragSelect = true
-            dragAnchor = adapter.items.indexOf(f)
-            dragAdd = f.path in adapter.selected
-            dragBase = LinkedHashSet(adapter.selected).also { if (dragAdd) it.remove(f.path) else it.add(f.path) }
-            dragLast = dragAnchor
-        } else showSheet(listOf(f))
+        if (!adapter.selectionMode) enterSelect()
+        adapter.toggle(f); updateSelectionUi()
+        dragSelect = true
+        dragAnchor = adapter.items.indexOf(f)
+        dragAdd = f.path in adapter.selected
+        dragBase = LinkedHashSet(adapter.selected).also { if (dragAdd) it.remove(f.path) else it.add(f.path) }
+        dragLast = dragAnchor
     }
+
+    /** The "⋯" button on each row opens the actions for that file. */
+    private fun onItemMore(f: FileItem, anchor: View) = showSheet(listOf(f))
 
     private var dragSelect = false
     private var dragAnchor = -1
@@ -418,7 +420,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             else -> FileAdapter.LIST
         }
         val old = if (::adapter.isInitialized) adapter else null
-        adapter = FileAdapter(mode, ::onItemClick, ::onItemLongClick)
+        adapter = FileAdapter(mode, ::onItemClick, ::onItemLongClick, ::onItemMore)
         adapter.glassColor = DeviceUi.glass(ctx, R.color.card_bg)
         old?.let { adapter.items = it.items }
         val cols = when (mode) {

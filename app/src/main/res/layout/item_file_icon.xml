@@ -32,6 +32,20 @@
             android:layout_margin="3dp"
             android:importantForAccessibility="no"
             android:visibility="gone" />
+
+        <!-- "⋯" button: opens the actions for this file -->
+        <ImageView
+            android:id="@+id/more"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_round_btn"
+            android:contentDescription="@string/more_actions"
+            android:padding="6dp"
+            android:src="@drawable/ic_more"
+            android:tint="@color/text_secondary"
+            android:clickable="true"
+            android:focusable="true" />
     </FrameLayout>
 
     <TextView

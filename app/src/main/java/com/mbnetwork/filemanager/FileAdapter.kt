@@ -22,7 +22,8 @@ import java.util.Date
 class FileAdapter(
     private val mode: Int,
     private val onClick: (FileItem) -> Unit,
-    private val onLongClick: (FileItem, View) -> Unit
+    private val onLongClick: (FileItem, View) -> Unit,
+    private val onMore: (FileItem, View) -> Unit = { _, _ -> }
 ) : RecyclerView.Adapter<FileAdapter.VH>() {
 
     var items: List<FileItem> = emptyList()
@@ -110,6 +111,11 @@ class FileAdapter(
             else listOf(size, date).filter { it.isNotEmpty() }.joinToString("  •  ")
         h.itemView.setOnClickListener { onClick(f) }
         h.itemView.setOnLongClickListener { onLongClick(f, it); true }
+        // "⋯" button: open the actions (only when not selecting; selecting uses long-press + drag)
+        h.itemView.findViewById<View>(R.id.more)?.let { m ->
+            m.visibility = if (selectionMode) View.GONE else View.VISIBLE
+            m.setOnClickListener { onMore(f, it) }
+        }
     }
 
     /** Thumbnail size follows the column width so icons are never squeezed. */
