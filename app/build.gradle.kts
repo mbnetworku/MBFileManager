@@ -11,8 +11,8 @@ android {
         applicationId = "com.mbnetwork.filemanager"
         minSdk = 21          // Android 5.0 Lollipop
         targetSdk = 34
-        versionCode = 43
-        versionName = "2.9.0.023"
+        versionCode = 44
+        versionName = "2.9.0.024"
     }
 
     // One fixed key for every build, so new versions install as UPDATES over old ones.
