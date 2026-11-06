@@ -1,3 +1,6 @@
+## 2.9.0.030
+- New: swipe left / right on the mini player bar or on the full player to change song.
+- Changed: the mini player bar comes back when you press play again after hiding it.
 ## 2.9.0.029
 - New: a progress bar for copy, move and delete. You can hide it with its X; it stays in the notification with a progress bar, and a short "Done" notice appears when it finishes.
 - Fixed: the music player in landscape (cover and controls now sit side by side).

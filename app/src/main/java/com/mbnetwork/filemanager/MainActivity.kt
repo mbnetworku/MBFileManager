@@ -293,30 +293,40 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.miniNext).setOnClickListener { MusicPlayer.next() }
         findViewById<View>(R.id.miniClose).setOnClickListener { MusicPlayer.stop() }   // ✕ stops the music and hides the bar
 
-        // tap = open the player, swipe down = hide the bar (the music keeps playing)
+        // tap = open the player, swipe down = hide / close, swipe left / right = next / previous song
         mini.setOnTouchListener(object : View.OnTouchListener {
+            var downX = 0f
             var downY = 0f
-            var dragged = false
+            var axis = 0          // 0 = not decided yet, 1 = vertical, 2 = horizontal
             override fun onTouch(v: View, e: android.view.MotionEvent): Boolean {
                 when (e.actionMasked) {
-                    android.view.MotionEvent.ACTION_DOWN -> { downY = e.rawY; dragged = false; return true }
+                    android.view.MotionEvent.ACTION_DOWN -> { downX = e.rawX; downY = e.rawY; axis = 0; return true }
                     android.view.MotionEvent.ACTION_MOVE -> {
+                        val dx = e.rawX - downX
                         val dy = e.rawY - downY
-                        if (dy > 8 * d) dragged = true
-                        if (dragged) v.translationY = dy.coerceAtLeast(0f)
+                        if (axis == 0 && (Math.abs(dx) > 8 * d || Math.abs(dy) > 8 * d))
+                            axis = if (Math.abs(dx) > Math.abs(dy)) 2 else 1
+                        if (axis == 1 && dy > 0) v.translationY = dy
+                        if (axis == 2) v.translationX = dx
                         return true
                     }
                     android.view.MotionEvent.ACTION_UP -> {
+                        val dx = e.rawX - downX
                         val dy = e.rawY - downY
                         when {
-                            !dragged && kotlin.math.abs(dy) < 8 * d ->
-                                startActivity(android.content.Intent(this@MainActivity, PlayerActivity::class.java))
+                            axis == 0 -> startActivity(android.content.Intent(this@MainActivity, PlayerActivity::class.java))
+                            axis == 2 && dx < -60 * d -> { v.animate().translationX(0f).setDuration(120).start(); MusicPlayer.next() }
+                            axis == 2 && dx > 60 * d -> { v.animate().translationX(0f).setDuration(120).start(); MusicPlayer.previous() }
+                            axis == 2 -> v.animate().translationX(0f).setDuration(160).start()
                             dy > 40 * d -> askMiniAction(v)
                             else -> v.animate().translationY(0f).setDuration(160).start()
                         }
                         return true
                     }
-                    android.view.MotionEvent.ACTION_CANCEL -> { v.animate().translationY(0f).setDuration(160).start(); return true }
+                    android.view.MotionEvent.ACTION_CANCEL -> {
+                        v.animate().translationX(0f).translationY(0f).setDuration(160).start()
+                        return true
+                    }
                 }
                 return false
             }
@@ -351,9 +361,15 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
+    private var wasPlaying = false
+
     private fun updateMini() {
         val mini = findViewById<GlassView>(R.id.miniGlass) ?: return
         val song = MusicPlayer.current
+        // starting playback again brings back a bar that was hidden with Hide
+        val playingNow = MusicPlayer.isPlaying
+        if (playingNow && !wasPlaying) miniDismissedFor = null
+        wasPlaying = playingNow
         val show = MusicPlayer.active && song != null && !miniSuppressed && song.absolutePath != miniDismissedFor
         if (!show) {
             if (mini.visibility == View.VISIBLE) { mini.visibility = View.GONE; miniShownPath = null }

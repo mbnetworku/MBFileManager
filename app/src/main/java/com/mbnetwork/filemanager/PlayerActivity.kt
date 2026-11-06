@@ -320,6 +320,14 @@ class PlayerActivity : AppCompatActivity() {
                 return true
             }
         }
+        // swipe left / right (not on the seek bar) = next / previous song
+        if (ev.actionMasked == android.view.MotionEvent.ACTION_UP && !swiping && !onSeek) {
+            val dx = ev.rawX - sx
+            val dy = ev.rawY - sy
+            if (Math.abs(dx) > 80 * d && Math.abs(dx) > 1.5f * Math.abs(dy)) {
+                if (dx < 0) MusicPlayer.next() else MusicPlayer.previous()
+            }
+        }
         return super.dispatchTouchEvent(ev)
     }
 
