@@ -47,12 +47,12 @@ Smooth slide / fade between screens, list items that rise in, a selection toolba
 ### 🏠 Browse screen
 - Search all files by name
 - Storage cards with usage bars
-- Categories with counts: Images, Videos, Music, Documents, APKs, Archives, Downloads, Large files
+- Filter chips: Images, Videos, Music, Documents, APKs, Archives, Downloads, PNG images, RAW (.DNG), Duplicates, Large files
 - Recent files with thumbnails, and quick tools
 
 ### 🧭 Sidebar
 - Swipe from the left or tap ☰ to open, and it hides again when you're done
-- All storage with usage bars (internal, SD card, USB), quick folders (Downloads, Camera, Pictures, Music, Videos, Documents), OBB, Recycle Bin, Apps
+- All storage with usage bars (internal, SD card, USB), quick folders (Downloads, Camera, Pictures, Music, Videos, Documents, Screenshots, WhatsApp Images), Network & cloud, USB tools, OBB, Recycle Bin, Apps
 - Root places (`Android/data`, `/`) only on rooted devices
 
 ### 📁 File Explorer
@@ -93,7 +93,7 @@ Smooth slide / fade between screens, list items that rise in, a selection toolba
 - Saved passwords are encrypted with the phone's secure key store (Android 6+).
 
 ### 🔔 What's new
-After every update a short **What's new** message lists the newest features and fixes; the same list is shown in the "Update available" window before you update.
+After every update a short **What's new** message lists the newest features and fixes; the same list is shown in the "Update available" window before you update. The full list of changes per version is in [`app/src/main/assets/whatsnew.txt`](app/src/main/assets/whatsnew.txt) and on every [release](https://github.com/mbnetworku/MBFileManager/releases).
 
 ### 🔌 USB drive tools
 - Finds USB OTG drives, card readers and SD cards, with a live "USB drive connected" alert
