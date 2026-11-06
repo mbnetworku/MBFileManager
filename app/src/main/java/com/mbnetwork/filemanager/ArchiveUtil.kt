@@ -1,6 +1,9 @@
 package com.mbnetwork.filemanager
 
 import com.github.junrar.Archive
+import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.model.enums.AesKeyStrength
+import net.lingala.zip4j.model.enums.EncryptionMethod
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
@@ -35,21 +38,49 @@ object ArchiveUtil {
 
     fun ext(format: Int) = when (format) { TAR -> ".tar"; TGZ -> ".tar.gz"; else -> ".zip" }
 
-    fun extract(src: File, dest: File) {
+    class NeedPassword : IOException("Password needed")
+    class WrongPassword : IOException("Wrong password")
+
+    fun extract(src: File, dest: File, password: String? = null) {
         val name = src.name
         when {
-            ZipUtil.isZip(name) -> ZipUtil.unzip(src, dest)
-            isRar(name) -> unrar(src, dest)
+            ZipUtil.isZip(name) -> unzip(src, dest, password)
+            isRar(name) -> unrar(src, dest, password)
             isTar(name) -> untar(src, dest)
             else -> throw IOException("Unknown archive")
         }
     }
 
-    fun create(sources: List<File>, out: File, format: Int) {
+    fun create(sources: List<File>, out: File, format: Int, password: String? = null) {
         when (format) {
             TAR -> BufferedOutputStream(FileOutputStream(out)).use { tar(sources, it) }
             TGZ -> GZIPOutputStream(BufferedOutputStream(FileOutputStream(out))).use { tar(sources, it) }
-            else -> ZipUtil.zip(sources, out)
+            else -> if (password.isNullOrEmpty()) ZipUtil.zip(sources, out) else zipWithPassword(sources, out, password)
+        }
+    }
+
+    /** ZIP with AES-256 encryption (opens in 7-Zip, WinRAR, Android apps; Windows Explorer can not read AES zips). */
+    private fun zipWithPassword(sources: List<File>, out: File, password: String) {
+        val zf = net.lingala.zip4j.ZipFile(out, password.toCharArray())
+        val p = ZipParameters()
+        p.isEncryptFiles = true
+        p.encryptionMethod = EncryptionMethod.AES
+        p.aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
+        for (s in sources) if (s.isDirectory) zf.addFolder(s, p) else zf.addFile(s, p)
+    }
+
+    private fun unzip(src: File, dest: File, password: String?) {
+        val zf = net.lingala.zip4j.ZipFile(src)
+        val enc = try { zf.isEncrypted } catch (e: Throwable) { false }
+        if (!enc) { ZipUtil.unzip(src, dest); return }
+        if (password == null) throw NeedPassword()
+        zf.setPassword(password.toCharArray())
+        try {
+            dest.mkdirs()
+            zf.extractAll(dest.path)
+        } catch (e: net.lingala.zip4j.exception.ZipException) {
+            if (e.type == net.lingala.zip4j.exception.ZipException.Type.WRONG_PASSWORD) throw WrongPassword()
+            throw e
         }
     }
 
@@ -62,17 +93,29 @@ object ArchiveUtil {
 
     // ------------------------------------------------------------------ RAR
 
-    private fun unrar(src: File, dest: File) {
+    private fun unrar(src: File, dest: File, password: String?) {
         dest.mkdirs()
-        Archive(src).use { a ->
-            if (a.isEncrypted) throw IOException("Password protected RAR")
+        val arc = try {
+            if (password == null) Archive(src) else Archive(src, password)
+        } catch (e: com.github.junrar.exception.UnsupportedRarV5Exception) {
+            throw IOException("RAR 5 is not supported")
+        } catch (e: Throwable) {
+            if (password == null) throw NeedPassword() else throw WrongPassword()
+        }
+        arc.use { a ->
+            if (a.isEncrypted && password == null) throw NeedPassword()
             var fh = a.nextFileHeader()
             while (fh != null) {
+                if (fh.isEncrypted && password == null) throw NeedPassword()
                 val target = safe(dest, fh.fileName.replace('\\', '/'))
                 if (fh.isDirectory) target.mkdirs()
                 else {
                     target.parentFile?.mkdirs()
-                    BufferedOutputStream(FileOutputStream(target)).use { a.extractFile(fh, it) }
+                    try {
+                        BufferedOutputStream(FileOutputStream(target)).use { a.extractFile(fh, it) }
+                    } catch (e: IOException) { throw e } catch (e: Throwable) {
+                        throw if (password != null) WrongPassword() else e
+                    }
                 }
                 fh = a.nextFileHeader()
             }

@@ -81,17 +81,61 @@ class PdfActivity : AppCompatActivity() {
         file = File(intent.getStringExtra(EXTRA_PATH) ?: run { finish(); return })
         window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0xFF2C2C2E.toInt()))
         try {
-            pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-            renderer = PdfRenderer(pfd!!)
-            pageCount = renderer!!.pageCount
-            for (i in 0 until pageCount) synchronized(lock) {
-                renderer!!.openPage(i).use { p -> ratios += p.height.toFloat() / p.width }
-            }
+            openRenderer(file)
+            buildUi()
+        } catch (e: SecurityException) {
+            askPdfPassword(false)
         } catch (e: Throwable) {
             Toast.makeText(this, R.string.pdf_failed, Toast.LENGTH_LONG).show()
-            finish(); return
+            finish()
         }
+    }
 
+    private fun openRenderer(f: File) {
+        try { renderer?.close(); pfd?.close() } catch (e: Throwable) { }
+        renderer = null; pfd = null
+        ratios.clear()
+        val p = ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY)
+        try {
+            val r = PdfRenderer(p)
+            pfd = p; renderer = r
+            pageCount = r.pageCount
+            for (i in 0 until pageCount) synchronized(lock) {
+                r.openPage(i).use { pg -> ratios += pg.height.toFloat() / pg.width }
+            }
+        } catch (e: Throwable) { try { p.close() } catch (x: Throwable) { }; throw e }
+    }
+
+    private var unlocked: File? = null
+
+    /** Password-protected PDF: ask for the password, make an unlocked temporary copy and open that. */
+    private fun askPdfPassword(wrong: Boolean) {
+        PasswordDialog.ask(this, file.name, wrong, onCancel = { finish() }) { pw ->
+            lifecycleScope.launch {
+                val ok = withContext(Dispatchers.IO) {
+                    try {
+                        com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(applicationContext)
+                        val out = File(cacheDir, "unlocked_" + System.currentTimeMillis() + ".pdf")
+                        com.tom_roush.pdfbox.pdmodel.PDDocument.load(file, pw).use { doc ->
+                            doc.setAllSecurityToBeRemoved(true)
+                            doc.save(out)
+                        }
+                        unlocked = out
+                        openRenderer(out)
+                        1
+                    } catch (e: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) { 0 }
+                    catch (e: Throwable) { -1 }
+                }
+                when (ok) {
+                    1 -> buildUi()
+                    0 -> askPdfPassword(true)
+                    else -> { Toast.makeText(this@PdfActivity, R.string.pdf_failed, Toast.LENGTH_LONG).show(); finish() }
+                }
+            }
+        }
+    }
+
+    private fun buildUi() {
         val root = FrameLayout(this).apply { setBackgroundColor(0xFF2C2C2E.toInt()) }
         adapter = PageAdapter()
         rv = RecyclerView(this).apply {
@@ -144,7 +188,7 @@ class PdfActivity : AppCompatActivity() {
             addView(toolBtn("T") { tool = 2 })
             addView(UiKit.iconButton(context, R.drawable.ic_undo, getString(R.string.undo)) { undoLast() })
             addView(View(context).apply {
-                background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(colors[0]); setStroke(dp(2), Color.WHITE) }
+                background = android.graphics.drawable.GradientDrawable().apply { shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(this@PdfActivity.colors[0]); setStroke(dp(2), Color.WHITE) }
                 layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { setMargins(dp(8), 0, dp(8), 0) }
                 setOnClickListener {
                     colorIdx = (colorIdx + 1) % colors.size
@@ -405,6 +449,7 @@ class PdfActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         try { renderer?.close(); pfd?.close() } catch (e: Throwable) { }
+        unlocked?.delete()
         super.onDestroy()
     }
 

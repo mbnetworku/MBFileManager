@@ -50,7 +50,8 @@ app/src/main/java/com/mbnetwork/filemanager/
   MusicPlayer.kt, MusicService.kt, PlayerActivity.kt, EqualizerView.kt   music
   PhotoViewerActivity.kt, ZoomImageView.kt, PhotoEditorActivity.kt, EditorCanvas.kt, ImageUtil.kt   photos
   VideoPlayerActivity.kt, VideoEditorActivity.kt, VideoTrimmer.kt   video
-  ArchiveUtil.kt (zip/tar/tgz/rar, junrar 7.5.5), ZipUtil.kt
+  OfficeCrypt.java (Agile decrypt, tested against msoffcrypto), OfficeUnlock.kt, PasswordDialog.kt
+  ArchiveUtil.kt (zip4j for password zips, zip/tar/tgz/rar, junrar 7.5.5), ZipUtil.kt
   PdfActivity.kt, DocxToPdf.kt                                       PDF reader/editor (PdfRenderer + PdfDocument), docx -> pdf
   BgRemover.kt                                                       on-device background removal (k-means + flood fill magic wand, PNG output)
   OfficeActivity.kt, OfficeDoc.kt   Word / Excel / PowerPoint viewer + editor (OOXML = zipped XML)

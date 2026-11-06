@@ -317,4 +317,9 @@
     <string name="converting">Converting to PDF…</string>
     <string name="convert_failed">Could not convert this document.</string>
     <string name="mini_close">Stop music</string>
+    <string name="password">Password</string>
+    <string name="password_optional">Password (leave empty for none)</string>
+    <string name="password_needed">%1$s is protected. Enter the password</string>
+    <string name="wrong_password">Wrong password, try again.</string>
+    <string name="unlocked_copy">Unlocked copy saved as %1$s</string>
 </resources>

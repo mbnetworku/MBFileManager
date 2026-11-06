@@ -71,6 +71,7 @@ Smooth slide / fade between screens, list items that rise in, a selection toolba
 - 🎨 **Photo editor**: crop (1:1, 4:3, 16:9…), rotate, flip, 9 filters, brightness / contrast / saturation, save as a copy or replace
 - ✨ **Smart (on-device) photo tools**: auto enhance, smart crop, blur faces, portrait blur
 - 🗜️ **Archives**: open/extract **ZIP, RAR (RAR 4 and older), TAR, TAR.GZ / TGZ**; create **ZIP, TAR, TAR.GZ** (select files → Compress). Creating RAR is not possible (closed format).
+- 🔐 **Passwords**: open password-protected **PDF**, **Word / Excel / PowerPoint** (Office 2010+) and **ZIP / RAR** files (enter the password when asked); create **ZIP with a password** (AES-256, open it with 7-Zip / WinRAR). Locked Office files are opened through an unlocked copy saved next to the original. Creating a password-protected RAR is not possible.
 - 📄 **PDF reader + editor** (on the phone): scroll, pinch to zoom, then ✎ Edit to draw, highlight and add text, saved as a new PDF. **Word → PDF**: open a .docx → ⋮ → Convert to PDF (or long-press the file). Pictures, bold/italic, headings, lists and simple tables are kept.
 - 🎵 The mini player bar has a ✕ button (stops the music); swipe it down to just hide it, tap it to open the full player.
 - 🎬 **Modern video player** (floating glass controls, double-tap left/right to skip 10 s, auto-hiding bars; previous / next video in the folder, ±10 s, hold ±10 to fast-forward or rewind, speed 0.5x–2x on Android 6+, seek bar) and **video editor**: trim, mute, rotate, saved as a new MP4 without losing quality

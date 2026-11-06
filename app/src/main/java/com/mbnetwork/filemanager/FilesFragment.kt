@@ -465,14 +465,16 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (items.isEmpty()) return
         val base = if (items.size == 1) items[0].name.substringBeforeLast('.').ifEmpty { items[0].name } else "Archive"
         val dir = currentPath
-        val formats = arrayOf("ZIP (.zip)", "TAR (.tar)", "TAR + GZIP (.tar.gz)")
+        val formats = arrayOf("ZIP (.zip)", "ZIP + password (.zip)", "TAR (.tar)", "TAR + GZIP (.tar.gz)")
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.archive_format)
-            .setItems(formats) { _, which ->
+            .setItems(formats) { _, pick ->
+                val withPw = pick == 1
+                val which = when (pick) { 0, 1 -> ArchiveUtil.ZIP; 2 -> ArchiveUtil.TAR; else -> ArchiveUtil.TGZ }
                 val ext = ArchiveUtil.ext(which)
-                promptName(R.string.zip_name, "$base$ext") { raw ->
+                PasswordDialog.nameAndPassword(requireContext(), R.string.zip_name, "$base$ext", withPw) { raw, pw ->
                     val name = if (raw.lowercase().endsWith(ext)) raw.dropLast(ext.length) else raw
-                    ArchiveUtil.create(items.map { File(it.path) }, ZipUtil.uniqueName(File(dir), name, ext), which)
+                    runOp { ArchiveUtil.create(items.map { File(it.path) }, ZipUtil.uniqueName(File(dir), name, ext), which, if (withPw) pw else null) }
                 }
             }
             .setNegativeButton(R.string.cancel, null).show()
@@ -488,11 +490,23 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
             .setNegativeButton(R.string.cancel, null).show()
     }
 
-    private fun extract(f: FileItem) {
+    private fun extract(f: FileItem, password: String? = null, wrong: Boolean = false) {
         val parent = File(f.path).parentFile ?: return
-        runOp {
-            val dest = ZipUtil.uniqueName(parent, ArchiveUtil.baseName(f.name), "")
-            ArchiveUtil.extract(File(f.path), dest)
+        swipe.isRefreshing = true
+        viewLifecycleOwner.lifecycleScope.launch {
+            val err = withContext(Dispatchers.IO) {
+                val dest = ZipUtil.uniqueName(parent, ArchiveUtil.baseName(f.name), "")
+                try { ArchiveUtil.extract(File(f.path), dest, password); null }
+                catch (e: Throwable) { dest.deleteRecursively(); e }
+            }
+            when (err) {
+                null -> { toast(R.string.done); refresh() }
+                is ArchiveUtil.NeedPassword, is ArchiveUtil.WrongPassword -> {
+                    refresh()
+                    PasswordDialog.ask(requireContext(), f.name, err is ArchiveUtil.WrongPassword) { extract(f, it) }
+                }
+                else -> { refresh(); Toast.makeText(requireContext(), getString(R.string.failed, err.message ?: ""), Toast.LENGTH_LONG).show() }
+            }
         }
     }
 
@@ -656,7 +670,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                 OfficeDoc.isOffice(single.name) && OfficeDoc.kind(single.name) != "old" -> {
                     addRow(g1, R.string.open_office, R.drawable.ic_doc) { openOffice(single) }
                     if (OfficeDoc.kind(single.name) == "docx")
-                        addRow(g1, R.string.convert_pdf, R.drawable.ic_doc) { DocxToPdf.start(requireActivity() as androidx.appcompat.app.AppCompatActivity, File(single.path)) }
+                        addRow(g1, R.string.convert_pdf, R.drawable.ic_doc) { OfficeUnlock.open(requireActivity() as androidx.appcompat.app.AppCompatActivity, File(single.path)) { DocxToPdf.start(requireActivity() as androidx.appcompat.app.AppCompatActivity, it) } }
                 }
                 ArchiveUtil.isArchive(single.name) -> addRow(g1, R.string.extract, R.drawable.ic_zip) { extract(single) }
             }
@@ -822,7 +836,10 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         startActivity(Intent(requireContext(), PdfActivity::class.java).putExtra(PdfActivity.EXTRA_PATH, f.path).putExtra(PdfActivity.EXTRA_EDIT, edit))
 
     private fun openOffice(f: FileItem) {
-        startActivity(Intent(requireContext(), OfficeActivity::class.java).putExtra(OfficeActivity.EXTRA_PATH, f.path))
+        OfficeUnlock.open(requireActivity() as androidx.appcompat.app.AppCompatActivity, File(f.path)) { ready ->
+            startActivity(Intent(requireContext(), OfficeActivity::class.java).putExtra(OfficeActivity.EXTRA_PATH, ready.path))
+            refresh()
+        }
     }
 
     private fun openText(f: FileItem, edit: Boolean) {
