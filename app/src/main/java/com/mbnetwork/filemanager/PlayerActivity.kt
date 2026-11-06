@@ -288,6 +288,41 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun fmt(ms: Int): String { val s = ms / 1000; return "%d:%02d".format(s / 60, s % 60) }
 
+    // ---- swipe down anywhere (except on the seek bar) to go back to the mini player bar
+    private var sx = 0f
+    private var sy = 0f
+    private var swiping = false
+    private var onSeek = false
+
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        val d = resources.displayMetrics.density
+        val content = findViewById<View>(android.R.id.content)
+        when (ev.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> {
+                sx = ev.rawX; sy = ev.rawY; swiping = false
+                val r = android.graphics.Rect()
+                onSeek = findViewById<View>(R.id.seek)?.let { it.getGlobalVisibleRect(r) && r.contains(ev.rawX.toInt(), (ev.rawY).toInt()) } ?: false
+            }
+            android.view.MotionEvent.ACTION_MOVE -> {
+                val dy = ev.rawY - sy
+                val dx = ev.rawX - sx
+                if (!swiping && !onSeek && dy > 16 * d && dy > Math.abs(dx) * 1.5f) {
+                    swiping = true
+                    val c = android.view.MotionEvent.obtain(ev); c.action = android.view.MotionEvent.ACTION_CANCEL
+                    super.dispatchTouchEvent(c); c.recycle()
+                }
+                if (swiping) { content.translationY = dy.coerceAtLeast(0f); return true }
+            }
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> if (swiping) {
+                swiping = false
+                if (ev.rawY - sy > 110 * d && ev.actionMasked == android.view.MotionEvent.ACTION_UP) finish()
+                else content.animate().translationY(0f).setDuration(180).start()
+                return true
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
     override fun finish() { super.finish(); DeviceUi.exitDrop(this) }
 
     companion object { const val EXTRA_PATH = "path" }

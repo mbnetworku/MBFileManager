@@ -322,4 +322,10 @@
     <string name="password_needed">%1$s is protected. Enter the password</string>
     <string name="wrong_password">Wrong password, try again.</string>
     <string name="unlocked_copy">Unlocked copy saved as %1$s</string>
+    <string name="video_delete_q">Move this video to the Bin, or delete it forever? The next video plays after that.</string>
+    <string name="delete_forever">Delete forever</string>
+    <string name="video_delete_failed">Could not delete this video.</string>
+    <string name="mini_ask">What do you want to do with the music bar?</string>
+    <string name="mini_hide">Hide the bar (music keeps playing)</string>
+    <string name="mini_stop">Close and stop the music</string>
 </resources>

@@ -287,7 +287,7 @@ class MainActivity : AppCompatActivity() {
                         when {
                             !dragged && kotlin.math.abs(dy) < 8 * d ->
                                 startActivity(android.content.Intent(this@MainActivity, PlayerActivity::class.java))
-                            dy > 40 * d -> dismissMini(v)
+                            dy > 40 * d -> askMiniAction(v)
                             else -> v.animate().translationY(0f).setDuration(160).start()
                         }
                         return true
@@ -304,6 +304,18 @@ class MainActivity : AppCompatActivity() {
                 v.post { applyMiniInset(miniExtra) }
             }
         }, false)
+    }
+
+    /** Swiped the bar down: hide it (music keeps playing) or close it (music stops). */
+    private fun askMiniAction(v: View) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.mini_ask)
+            .setItems(arrayOf(getString(R.string.mini_hide), getString(R.string.mini_stop))) { _, which ->
+                if (which == 0) dismissMini(v) else { v.translationY = 0f; MusicPlayer.stop() }
+            }
+            .setNegativeButton(R.string.cancel) { _, _ -> v.animate().translationY(0f).setDuration(160).start() }
+            .setOnCancelListener { v.animate().translationY(0f).setDuration(160).start() }
+            .show()
     }
 
     private fun dismissMini(v: View) {

@@ -168,6 +168,7 @@ class VideoPlayerActivity : AppCompatActivity() {
                 startActivity(Intent(context, VideoEditorActivity::class.java).putExtra(VideoEditorActivity.EXTRA_PATH, path))
             }, 44, 11))
             addView(circle(UiKit.iconButton(context, R.drawable.ic_share, getString(R.string.share)) { share() }, 44, 11))
+            addView(circle(UiKit.iconButton(context, R.drawable.ic_delete, getString(R.string.delete)) { confirmDelete() }, 44, 11))
         }
         root.addView(topBar, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP))
 
@@ -251,6 +252,38 @@ class VideoPlayerActivity : AppCompatActivity() {
         video.stopPlayback()
         video.setVideoPath(path)
         updateNav()
+    }
+
+    /** Deletes the playing video (Bin or forever) and goes straight to the next one. */
+    private fun confirmDelete() {
+        video.pause()
+        val name = File(path).name
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(name)
+            .setMessage(R.string.video_delete_q)
+            .setPositiveButton(R.string.move_to_bin) { _, _ -> doDelete(false) }
+            .setNegativeButton(R.string.delete_forever) { _, _ -> doDelete(true) }
+            .setNeutralButton(R.string.cancel) { _, _ -> if (wasPlaying) video.start() }
+            .show()
+    }
+
+    private fun doDelete(forever: Boolean) {
+        val p = path
+        Thread {
+            val ok = try {
+                if (forever) File(p).delete() else { Trash.moveToTrash(applicationContext, p); !File(p).exists() }
+            } catch (e: Throwable) { false }
+            runOnUiThread {
+                if (!ok) { Toast.makeText(this, R.string.video_delete_failed, Toast.LENGTH_LONG).show(); return@runOnUiThread }
+                android.media.MediaScannerConnection.scanFile(this, arrayOf(p), null, null)
+                Toast.makeText(this, R.string.done, Toast.LENGTH_SHORT).show()
+                val rest = siblings.toMutableList().also { it.remove(p) }
+                if (rest.isEmpty()) { finish(); return@runOnUiThread }
+                val next = index.coerceAtMost(rest.size - 1)
+                siblings = rest
+                openAt(next)
+            }
+        }.start()
     }
 
     private fun updateNav() {
