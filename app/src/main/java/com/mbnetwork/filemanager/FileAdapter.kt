@@ -160,7 +160,7 @@ class FileAdapter(
         private val IMAGE = setOf("jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "svg")
         private val VIDEO = setOf("mp4", "mkv", "avi", "mov", "webm", "3gp", "flv", "ts", "m4v")
         private val AUDIO = setOf("mp3", "wav", "ogg", "flac", "aac", "m4a", "opus", "amr")
-        private val ARCHIVE = setOf("zip", "rar", "7z", "tar", "gz", "xz", "bz2", "obb")
+        private val ARCHIVE = setOf("zip", "rar", "7z", "tar", "tgz", "gz", "xz", "bz2", "obb")
         private val DOC = setOf("pdf", "doc", "docx", "txt", "xls", "xlsx", "ppt", "pptx", "csv", "md", "json", "xml", "html", "log")
 
         fun typeOf(f: FileItem): Pair<Int, Int> {

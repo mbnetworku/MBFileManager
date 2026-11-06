@@ -41,7 +41,7 @@ object FileIcons {
         add(Kind.PPT, "ppt", "pptx", "pptm", "odp")
         add(Kind.TEXT, "txt", "log", "md", "json", "xml", "ini", "conf", "cfg", "prop", "properties", "html", "htm",
             "js", "css", "kt", "java", "py", "sh", "bat", "yml", "yaml", "srt", "nfo")
-        add(Kind.ZIP, "zip", "rar", "7z", "tar", "gz", "xz", "bz2", "obb")
+        add(Kind.ZIP, "zip", "rar", "7z", "tar", "tgz", "gz", "xz", "bz2", "obb")
         add(Kind.APK, "apk")
         add(Kind.IMAGE, "jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "svg")
         add(Kind.VIDEO, "mp4", "mkv", "avi", "mov", "webm", "3gp", "flv", "ts", "m4v")

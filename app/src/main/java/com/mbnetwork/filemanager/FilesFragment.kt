@@ -341,7 +341,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (adapter.selectionMode) { adapter.toggle(f); updateSelectionUi(); return }
         when {
             f.isDir -> { virtualTitle = null; virtualLoader = null; limitPath = if (f.path.startsWith(internalRoot)) internalRoot else limitPath; navigate(f.path) }
-            ZipUtil.isZip(f.name) -> confirmExtract(f)
+            ArchiveUtil.isArchive(f.name) -> confirmExtract(f)
             PdfActivity.isPdf(f.name) && File(f.path).canRead() -> openPdf(f)
             OfficeDoc.isOffice(f.name) && OfficeDoc.kind(f.name) != "old" -> openOffice(f)
             ApkInstaller.isApk(f.name) -> installApk(f)
@@ -465,10 +465,17 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (items.isEmpty()) return
         val base = if (items.size == 1) items[0].name.substringBeforeLast('.').ifEmpty { items[0].name } else "Archive"
         val dir = currentPath
-        promptName(R.string.zip_name, "$base.zip") { raw ->
-            val name = if (raw.lowercase().endsWith(".zip")) raw.dropLast(4) else raw
-            ZipUtil.zip(items.map { File(it.path) }, ZipUtil.uniqueName(File(dir), name, ".zip"))
-        }
+        val formats = arrayOf("ZIP (.zip)", "TAR (.tar)", "TAR + GZIP (.tar.gz)")
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.archive_format)
+            .setItems(formats) { _, which ->
+                val ext = ArchiveUtil.ext(which)
+                promptName(R.string.zip_name, "$base$ext") { raw ->
+                    val name = if (raw.lowercase().endsWith(ext)) raw.dropLast(ext.length) else raw
+                    ArchiveUtil.create(items.map { File(it.path) }, ZipUtil.uniqueName(File(dir), name, ext), which)
+                }
+            }
+            .setNegativeButton(R.string.cancel, null).show()
         exitSelect()
     }
 
@@ -484,8 +491,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
     private fun extract(f: FileItem) {
         val parent = File(f.path).parentFile ?: return
         runOp {
-            val dest = ZipUtil.uniqueName(parent, f.name.substringBeforeLast('.'), "")
-            ZipUtil.unzip(File(f.path), dest)
+            val dest = ZipUtil.uniqueName(parent, ArchiveUtil.baseName(f.name), "")
+            ArchiveUtil.extract(File(f.path), dest)
         }
     }
 
@@ -651,7 +658,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                     if (OfficeDoc.kind(single.name) == "docx")
                         addRow(g1, R.string.convert_pdf, R.drawable.ic_doc) { DocxToPdf.start(requireActivity() as androidx.appcompat.app.AppCompatActivity, File(single.path)) }
                 }
-                ZipUtil.isZip(single.name) -> addRow(g1, R.string.extract, R.drawable.ic_zip) { extract(single) }
+                ArchiveUtil.isArchive(single.name) -> addRow(g1, R.string.extract, R.drawable.ic_zip) { extract(single) }
             }
             addRow(g1, R.string.open_with, R.drawable.ic_open) { openFile(single, chooser = true) }
             addRow(g1, R.string.open_text, R.drawable.ic_edit) { openText(single, edit = false) }

@@ -11,8 +11,8 @@ android {
         applicationId = "com.mbnetwork.filemanager"
         minSdk = 21          // Android 5.0 Lollipop
         targetSdk = 34
-        versionCode = 35
-        versionName = "2.9.0.015"
+        versionCode = 36
+        versionName = "2.9.0.016"
     }
 
     // One fixed key for every build, so new versions install as UPDATES over old ones.
@@ -69,6 +69,7 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("me.jahnen.libaums:core:0.10.0")
+    implementation("com.github.junrar:junrar:7.5.5")
     implementation("androidx.drawerlayout:drawerlayout:1.2.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.5")

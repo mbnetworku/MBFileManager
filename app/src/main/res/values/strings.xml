@@ -111,7 +111,8 @@
     <string name="view_list">List</string>
     <string name="move">Move</string>
     <string name="more">More</string>
-    <string name="compress">Compress (Zip)</string>
+    <string name="compress">Compress (ZIP / TAR)</string>
+    <string name="archive_format">Archive type (RAR can be opened but not created)</string>
     <string name="extract">Extract here</string>
     <string name="extract_confirm">Extract \"%1$s\" into a new folder here?</string>
     <string name="zip_name">Zip file name</string>

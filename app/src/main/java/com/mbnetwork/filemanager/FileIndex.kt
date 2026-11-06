@@ -16,7 +16,7 @@ object FileIndex {
         Category("aud", R.string.cat_music, R.drawable.ic_audio, R.color.t_audio, listOf("mp3", "m4a", "flac", "ogg", "wav", "aac", "opus", "amr")),
         Category("doc", R.string.cat_docs, R.drawable.ic_doc, R.color.t_doc, listOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "md", "odt", "rtf")),
         Category("apk", R.string.cat_apks, R.drawable.ic_android, R.color.t_apk, listOf("apk")),
-        Category("zip", R.string.cat_archives, R.drawable.ic_zip, R.color.t_archive, listOf("zip", "rar", "7z", "tar", "gz", "obb")),
+        Category("zip", R.string.cat_archives, R.drawable.ic_zip, R.color.t_archive, listOf("zip", "rar", "7z", "tar", "tgz", "gz", "obb")),
         Category("dl", R.string.downloads, R.drawable.ic_archive, R.color.grad_start, emptyList()),
         Category("big", R.string.cat_large, R.drawable.ic_storage, R.color.danger, emptyList())
     )
