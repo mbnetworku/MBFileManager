@@ -828,7 +828,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         if (paths.isEmpty()) return
         val act = requireActivity()
         OpProgress.start(title, paths.size)
-        ContextCompat.startForegroundService(act, Intent(act, OpService::class.java))
+        try { ContextCompat.startForegroundService(act, Intent(act, OpService::class.java)) } catch (e: Throwable) { }
         act.lifecycleScope.launch {
             var failed: String? = null
             withContext(Dispatchers.IO) {
@@ -837,7 +837,7 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
                     OpProgress.step()
                 }
             }
-            val msg = failed?.let { getString(R.string.failed, it) } ?: getString(R.string.done)
+            val msg = failed?.let { act.getString(R.string.failed, it) } ?: act.getString(R.string.done)
             OpProgress.finish(msg)
             if (failed != null) Toast.makeText(act, msg, Toast.LENGTH_LONG).show()
             refresh()

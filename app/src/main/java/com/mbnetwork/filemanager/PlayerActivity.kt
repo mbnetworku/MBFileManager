@@ -369,6 +369,7 @@ class PlayerActivity : AppCompatActivity() {
     private var sy = 0f
     private var swiping = false
     private var onSeek = false
+    private var onList = false
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
         val d = resources.displayMetrics.density
@@ -378,11 +379,13 @@ class PlayerActivity : AppCompatActivity() {
                 sx = ev.rawX; sy = ev.rawY; swiping = false
                 val r = android.graphics.Rect()
                 onSeek = findViewById<View>(R.id.seek)?.let { it.getGlobalVisibleRect(r) && r.contains(ev.rawX.toInt(), (ev.rawY).toInt()) } ?: false
+                val r2 = android.graphics.Rect()
+                onList = findViewById<View?>(R.id.queueList)?.let { it.getGlobalVisibleRect(r2) && r2.contains(ev.rawX.toInt(), ev.rawY.toInt()) } ?: false
             }
             android.view.MotionEvent.ACTION_MOVE -> {
                 val dy = ev.rawY - sy
                 val dx = ev.rawX - sx
-                if (!swiping && !onSeek && dy > 16 * d && dy > Math.abs(dx) * 1.5f) {
+                if (!swiping && !onSeek && !onList && dy > 16 * d && dy > Math.abs(dx) * 1.5f) {
                     swiping = true
                     val c = android.view.MotionEvent.obtain(ev); c.action = android.view.MotionEvent.ACTION_CANCEL
                     super.dispatchTouchEvent(c); c.recycle()
@@ -397,7 +400,7 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
         // swipe left / right (not on the seek bar) = next / previous song
-        if (ev.actionMasked == android.view.MotionEvent.ACTION_UP && !swiping && !onSeek) {
+        if (ev.actionMasked == android.view.MotionEvent.ACTION_UP && !swiping && !onSeek && !onList) {
             val dx = ev.rawX - sx
             val dy = ev.rawY - sy
             if (Math.abs(dx) > 80 * d && Math.abs(dx) > 1.5f * Math.abs(dy)) {

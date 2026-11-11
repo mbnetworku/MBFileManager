@@ -1,3 +1,6 @@
+## 2.9.0.040
+- Fixed: a crash when deleting, copying or moving finished very quickly, and a crash when leaving the folder before it finished.
+- Fixed: scrolling the song list in the landscape music player no longer closes the player or changes the song.
 ## 2.9.0.038
 - Files: every row (and grid / icon item) has a "⋯" button that opens the actions for that file.
 - Files: long-press now selects the item, and dragging your finger selects many items at once.

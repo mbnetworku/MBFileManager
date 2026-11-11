@@ -31,13 +31,12 @@ class OpService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (OpProgress.active) {
-            @Suppress("DEPRECATION")
+        // Must always be called after startForegroundService, even when the work has already finished.
+        try {
             startForeground(NOTIF_ID, progress())
             foregroundStarted = true
-        } else {
-            update()
-        }
+        } catch (e: Throwable) { foregroundStarted = false }
+        if (!OpProgress.active) update()
         return START_NOT_STICKY
     }
 
