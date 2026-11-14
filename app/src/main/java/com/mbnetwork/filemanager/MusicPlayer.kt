@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import java.io.File
@@ -57,14 +59,29 @@ object MusicPlayer {
     }
 
     /** Plays the tapped song with ALL songs on the phone as the queue (falls back to the folder if needed). */
+    private val mainH = Handler(Looper.getMainLooper())
+    private var loadGen = 0
+
     fun playFolder(file: File) {
-        val all = appContext?.let { library(it) } ?: emptyList()
-        val songs = if (all.any { it.absolutePath == file.absolutePath }) all else {
-            file.parentFile?.listFiles()?.filter { it.isFile && isAudio(it.name) }?.sortedBy { it.name.lowercase() } ?: listOf(file)
-        }
-        queue = songs.ifEmpty { listOf(file) }
-        index = queue.indexOfFirst { it.absolutePath == file.absolutePath }.coerceAtLeast(0)
+        // Start the tapped song at once; the full library is read off the main thread and then becomes the queue.
+        val gen = ++loadGen
+        queue = listOf(file)
+        index = 0
         start()
+        val ctx = appContext ?: return
+        Thread {
+            val all = library(ctx)
+            val songs = if (all.any { it.absolutePath == file.absolutePath }) all else {
+                file.parentFile?.listFiles()?.filter { it.isFile && isAudio(it.name) }?.sortedBy { it.name.lowercase() } ?: listOf(file)
+            }
+            mainH.post {
+                if (gen != loadGen) return@post                                   // another song was started meanwhile
+                if (current?.absolutePath != file.absolutePath) return@post       // the user already moved on
+                queue = songs.ifEmpty { listOf(file) }
+                index = queue.indexOfFirst { it.absolutePath == file.absolutePath }.coerceAtLeast(0)
+                changed()
+            }
+        }.start()
     }
 
     private fun start() {

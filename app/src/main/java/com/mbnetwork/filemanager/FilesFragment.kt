@@ -81,6 +81,9 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
 
     private fun closeCategory() { virtualTitle = null; virtualLoader = null; refresh() }
 
+    /** The list load in progress; a newer load cancels the older one so slow loads cannot overwrite fresh results. */
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     private data class Clip(val paths: List<String>, val cut: Boolean)
     private var clip: Clip? = null
 
@@ -199,7 +202,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         virtualLoader?.let { loader ->
             swipe.isRefreshing = true
             val app = requireContext().applicationContext
-            viewLifecycleOwner.lifecycleScope.launch {
+            loadJob?.cancel()
+            loadJob = viewLifecycleOwner.lifecycleScope.launch {
                 val list = withContext(Dispatchers.IO) { runCatching { loader(app) }.getOrDefault(emptyList()) }
                 swipe.isRefreshing = false
                 animateList("v|" + virtualTitle)
@@ -221,7 +225,8 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
         swipe.isRefreshing = true
         val path = currentPath
         val o = ops
-        viewLifecycleOwner.lifecycleScope.launch {
+        loadJob?.cancel()
+        loadJob = viewLifecycleOwner.lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) { runCatching { sort(o.list(path)) } }
             swipe.isRefreshing = false
             result.onSuccess {
@@ -826,21 +831,34 @@ class FilesFragment : Fragment(R.layout.fragment_files), Refreshable, MenuProvid
      */
     private fun runWithProgress(title: String, paths: List<String>, action: (String) -> Unit) {
         if (paths.isEmpty()) return
-        val act = requireActivity()
+        val app = requireActivity().applicationContext
+        // One copy / move / delete at a time: a second one would mix up the shared progress.
+        if (OpProgress.active) { Toast.makeText(app, R.string.op_busy, Toast.LENGTH_LONG).show(); return }
         OpProgress.start(title, paths.size)
-        try { ContextCompat.startForegroundService(act, Intent(act, OpService::class.java)) } catch (e: Throwable) { }
-        act.lifecycleScope.launch {
+        try { ContextCompat.startForegroundService(app, Intent(app, OpService::class.java)) } catch (e: Throwable) { }
+        // Runs in the app scope (not the screen's), so leaving the screen cannot leave the bar / notification stuck.
+        OpProgress.scope.launch {
             var failed: String? = null
-            withContext(Dispatchers.IO) {
-                for (p in paths) {
-                    try { action(p) } catch (e: Throwable) { failed = e.message ?: "error" }
-                    OpProgress.step()
+            var stopped = false
+            try {
+                withContext(Dispatchers.IO) {
+                    for (p in paths) {
+                        if (OpProgress.cancelled) { stopped = true; break }
+                        try { action(p) } catch (e: Throwable) { failed = e.message ?: "error" }
+                        OpProgress.step()
+                    }
                 }
+            } finally {
+                stopped = stopped || OpProgress.cancelled
+                val msg = when {
+                    stopped -> app.getString(R.string.op_cancelled)
+                    failed != null -> app.getString(R.string.failed, failed)
+                    else -> app.getString(R.string.done)
+                }
+                OpProgress.finish(msg)
+                if (stopped || failed != null) Toast.makeText(app, msg, Toast.LENGTH_LONG).show()
+                if (isAdded && view != null) refresh()
             }
-            val msg = failed?.let { act.getString(R.string.failed, it) } ?: act.getString(R.string.done)
-            OpProgress.finish(msg)
-            if (failed != null) Toast.makeText(act, msg, Toast.LENGTH_LONG).show()
-            refresh()
         }
     }
 

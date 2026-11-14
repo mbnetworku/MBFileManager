@@ -30,16 +30,33 @@ object RootShell {
     }
 
     /** Executes [cmd] as root. Call off the main thread. */
-    fun run(cmd: String): Result {
+    fun run(cmd: String, timeoutSec: Long = 120): Result {
         val p = Runtime.getRuntime().exec("su")
         var err = ""
-        val errThread = Thread { err = p.errorStream.bufferedReader().readText() }.apply { start() }
-        p.outputStream.bufferedWriter().use {
-            it.write(cmd); it.write("\nexit\n"); it.flush()
+        var out = ""
+        val errThread = Thread { try { err = p.errorStream.bufferedReader().readText() } catch (e: Throwable) { } }.apply { start() }
+        val outThread = Thread { try { out = p.inputStream.bufferedReader().readText() } catch (e: Throwable) { } }.apply { start() }
+        try {
+            p.outputStream.bufferedWriter().use {
+                it.write(cmd); it.write("\nexit\n"); it.flush()
+            }
+        } catch (e: Throwable) { }
+        // Wait with a deadline so a stuck command (or an unanswered root prompt) cannot block the thread forever.
+        val end = System.currentTimeMillis() + timeoutSec * 1000
+        var code = -1
+        var finished = false
+        while (!finished) {
+            try { code = p.exitValue(); finished = true } catch (e: IllegalThreadStateException) {
+                if (System.currentTimeMillis() > end) break
+                try { Thread.sleep(50) } catch (ie: InterruptedException) { break }
+            }
         }
-        val out = p.inputStream.bufferedReader().readText()
-        val code = p.waitFor()
-        errThread.join(5000)
+        if (!finished) {
+            p.destroy()
+            outThread.join(2000); errThread.join(2000)
+            return Result(124, out, "Timed out")
+        }
+        outThread.join(5000); errThread.join(5000)
         return Result(code, out, err)
     }
 

@@ -1,6 +1,7 @@
 # QUEUE-BACKPRESSURE.md – Queue Backpressure & Overload Audit
 
 **Project:** MB File Manager (Android, Kotlin, package `com.mbnetwork.filemanager`)
+**Status (v2.9.0.041):** findings F-01 to F-07 and potential risk P-02 were fixed in code (compiled by CI, **not tested on a device**). P-01, P-03, P-04 and P-05 were deliberately left unchanged (see section 14). The findings below describe the code as audited, before these fixes.
 **Audit type:** read-only source inspection. No code, config, dependency or infrastructure was changed. **No test, load test or device run was performed.** Everything below comes from reading source; statements such as "would happen" are reasoning, not observation.
 **Scope note:** this is a single-user on-device app. There is no server, message broker, database server, HTTP API or multi-tenant traffic. "Queue" here means in-process work buffers (thread-pool queues, coroutine launches, the music queue, the shared operation-progress state) and "overload" means a phone or car radio running out of threads, memory, main-thread time or network patience.
 

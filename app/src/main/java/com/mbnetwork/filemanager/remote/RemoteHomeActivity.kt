@@ -235,17 +235,24 @@ class RemoteHomeActivity : AppCompatActivity() {
 
     // ------------------------------------------------------------------ scan
 
+    private var scanning = false
+
     private fun scan() {
+        if (scanning) return                      // a scan is already running
         val ip = LanScanner.myIp()
         if (ip == null) { Toast.makeText(this, R.string.no_wifi, Toast.LENGTH_LONG).show(); return }
+        scanning = true
+        var cancelled = false
         val found = ArrayList<LanScanner.Host>()
         val msg = TextView(this).apply { text = getString(R.string.scanning, ip.substringBeforeLast('.') + ".x"); setPadding(dp(24), dp(16), dp(24), dp(8)) }
         val dlg = MaterialAlertDialogBuilder(this).setTitle(R.string.scan_network).setView(msg)
-            .setNegativeButton(R.string.cancel, null).show()
+            .setNegativeButton(R.string.cancel) { _, _ -> cancelled = true }
+            .setOnCancelListener { cancelled = true }.show()
         Thread {
-            LanScanner.scan { h -> synchronized(found) { found += h } }
+            LanScanner.scan({ cancelled }) { h -> synchronized(found) { found += h } }
             runOnUiThread {
-                if (!dlg.isShowing && found.isEmpty()) return@runOnUiThread
+                scanning = false
+                if (cancelled) return@runOnUiThread
                 dlg.dismiss()
                 if (found.isEmpty()) { Toast.makeText(this, R.string.scan_none, Toast.LENGTH_LONG).show(); return@runOnUiThread }
                 val sorted = found.sortedBy { it.ip.substringAfterLast('.').toIntOrNull() ?: 0 }

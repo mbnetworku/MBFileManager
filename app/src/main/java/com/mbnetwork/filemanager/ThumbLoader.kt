@@ -33,6 +33,7 @@ object ThumbLoader {
         cache.get(path)?.let { set(view, it); onLoaded(); return }
         val app = ctx.applicationContext
         pool.execute {
+            if (view.tag != path) return@execute   // scrolled away before this task started: skip the work
             val r: Any? = try { make(app, path) } catch (e: Throwable) { null }
             if (r != null) cache.put(path, r)
             main.post { if (view.tag == path && r != null) { set(view, r); onLoaded() } }

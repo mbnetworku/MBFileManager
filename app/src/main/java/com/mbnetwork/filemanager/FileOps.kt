@@ -79,27 +79,63 @@ class FileOps(private val root: Boolean) {
     fun copy(src: String, destDir: String) {
         val target = uniqueTarget(File(destDir, File(src).name))
         if (root) sh("cp -r ${q(src)} ${q(target.path)} || cp -R ${q(src)} ${q(target.path)}")
-        else if (!File(src).copyRecursively(target)) throw IOException("Cannot copy")
+        else copyTree(File(src), target)
     }
+
+    /** Copies a file or folder in chunks. Reports progress and stops (removing the partial copy) if the user cancelled. */
+    private fun copyTree(src: File, target: File) {
+        val total = sizeOf(src)
+        var copied = 0L
+        val buf = ByteArray(64 * 1024)
+        fun walk(s: File, t: File) {
+            if (s.isDirectory) {
+                if (!t.exists() && !t.mkdirs()) throw IOException("Cannot copy")
+                for (c in s.listFiles() ?: emptyArray()) walk(c, File(t, c.name))
+            } else {
+                s.inputStream().use { i -> t.outputStream().use { o ->
+                    while (true) {
+                        if (OpProgress.cancelled) throw IOException("Cancelled")
+                        val n = i.read(buf)
+                        if (n < 0) break
+                        o.write(buf, 0, n)
+                        copied += n
+                        OpProgress.setItem(copied, total)
+                    }
+                } }
+            }
+        }
+        try { walk(src, target) } catch (e: Throwable) { target.deleteRecursively(); throw if (e is IOException) e else IOException(e.message ?: "Cannot copy") }
+    }
+
+    private fun sizeOf(f: File): Long = if (f.isDirectory) (f.listFiles() ?: emptyArray()).sumOf { sizeOf(it) } else f.length()
 
     fun move(src: String, destDir: String) {
         val target = uniqueTarget(File(destDir, File(src).name))
         if (root) { sh("mv ${q(src)} ${q(target.path)}"); return }
         if (!File(src).renameTo(target)) {
-            if (!File(src).copyRecursively(target)) throw IOException("Cannot move")
+            copyTree(File(src), target)          // throws if it failed or was cancelled, so the original stays
             File(src).deleteRecursively()
         }
     }
 
     private fun uniqueTarget(f: File): File {
         if (!exists(f)) return f
-        var i = 1
+        if (root) {
+            // One su call for many candidate names instead of one process per probe.
+            val names = (1..200).map { candidate(f, it) }
+            val taken = try { RootShell.run(names.joinToString("\n") { "[ -e ${q(it.path)} ] && echo ${q(it.path)}" }).out.lines().toSet() } catch (e: Throwable) { emptySet() }
+            names.firstOrNull { it.path !in taken }?.let { return it }
+        }
+        var i = if (root) 201 else 1
         while (true) {
-            val c = File(f.parentFile, "${f.nameWithoutExtension} ($i)" + if (f.extension.isNotEmpty() && !f.isDirectory) ".${f.extension}" else "")
+            val c = candidate(f, i)
             if (!exists(c)) return c
             i++
         }
     }
+
+    private fun candidate(f: File, i: Int) =
+        File(f.parentFile, "${f.nameWithoutExtension} ($i)" + if (f.extension.isNotEmpty() && !f.isDirectory) ".${f.extension}" else "")
 
     private fun exists(f: File) = if (root) RootShell.run("[ -e ${q(f.path)} ]").ok else f.exists()
 

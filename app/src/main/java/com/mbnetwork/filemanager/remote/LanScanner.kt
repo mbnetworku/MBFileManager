@@ -20,7 +20,7 @@ object LanScanner {
     } catch (t: Throwable) { null }
 
     /** Blocking: call from a background thread. [onFound] is called for each host as it is found. */
-    fun scan(onFound: (Host) -> Unit): Int {
+    fun scan(isCancelled: () -> Boolean = { false }, onFound: (Host) -> Unit): Int {
         val me = myIp() ?: return 0
         val prefix = me.substringBeforeLast('.') + "."
         val pool = Executors.newFixedThreadPool(48)
@@ -29,19 +29,26 @@ object LanScanner {
             val ip = prefix + i
             if (ip == me) continue
             pool.execute {
+                if (isCancelled()) return@execute
                 val open = ArrayList<String>()
                 for ((port, type) in ports) {
+                    if (isCancelled()) return@execute
                     try { Socket().use { it.connect(InetSocketAddress(ip, port), 400); open += type } } catch (t: Throwable) { }
                 }
                 if (open.isNotEmpty()) {
                     val name = try { InetAddress.getByName(ip).canonicalHostName.takeIf { it != ip } ?: "" } catch (t: Throwable) { "" }
                     synchronized(this) { found++ }
-                    onFound(Host(ip, name, open))
+                    if (!isCancelled()) onFound(Host(ip, name, open))
                 }
             }
         }
         pool.shutdown()
-        pool.awaitTermination(60, TimeUnit.SECONDS)
+        val end = System.currentTimeMillis() + 60_000
+        try {
+            while (!pool.awaitTermination(200, TimeUnit.MILLISECONDS)) {
+                if (isCancelled() || System.currentTimeMillis() > end) { pool.shutdownNow(); break }
+            }
+        } catch (e: InterruptedException) { pool.shutdownNow() }
         return found
     }
 }

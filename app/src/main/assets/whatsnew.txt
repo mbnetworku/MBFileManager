@@ -1,3 +1,10 @@
+## 2.9.0.041
+- Copy, move and delete: the progress bar and notification can no longer get stuck if you leave the app, and a Cancel button is now in the notification.
+- Copy now shows progress for big files too, and a second copy / move / delete waits instead of mixing up the first one.
+- Music: the player opens at once, even with a very large music library.
+- Rooted phones: a stuck root command no longer freezes file operations.
+- Thumbnails load faster when you scroll quickly, and "Scan network" Cancel now really stops the scan.
+- Folder lists no longer show old results if you open another folder quickly.
 ## 2.9.0.040
 - Fixed: a crash when deleting, copying or moving finished very quickly, and a crash when leaving the folder before it finished.
 - Fixed: scrolling the song list in the landscape music player no longer closes the player or changes the song.

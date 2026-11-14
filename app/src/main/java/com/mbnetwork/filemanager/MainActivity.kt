@@ -275,8 +275,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.opTitle).text = OpProgress.title
         findViewById<TextView>(R.id.opCount).text = getString(R.string.op_count, OpProgress.done, OpProgress.total)
         val bp = findViewById<android.widget.ProgressBar>(R.id.opBar)
-        bp.max = OpProgress.total.coerceAtLeast(1)
-        bp.progress = OpProgress.done
+        bp.max = OpProgress.total.coerceAtLeast(1) * 100
+        bp.progress = OpProgress.done * 100 + OpProgress.itemPct
         bp.isIndeterminate = OpProgress.total <= 0
         bar.visibility = View.VISIBLE
     }

@@ -31,6 +31,11 @@ class OpService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_CANCEL) {
+            OpProgress.cancel()
+            if (!OpProgress.active) stopSelf()
+            return START_NOT_STICKY
+        }
         // Must always be called after startForegroundService, even when the work has already finished.
         try {
             startForeground(NOTIF_ID, progress())
@@ -53,8 +58,12 @@ class OpService : Service() {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-        if (OpProgress.total > 0) b.setProgress(OpProgress.total, OpProgress.done, false)
+        if (OpProgress.total > 0) b.setProgress(OpProgress.total * 100, OpProgress.done * 100 + OpProgress.itemPct, false)
         else b.setProgress(0, 0, true)
+        val pi = android.app.PendingIntent.getService(this, 0, Intent(this, OpService::class.java).setAction(ACTION_CANCEL),
+            if (Build.VERSION.SDK_INT >= 23) android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            else android.app.PendingIntent.FLAG_UPDATE_CURRENT)
+        b.addAction(0, getString(R.string.cancel), pi)
         return b.build()
     }
 
@@ -81,6 +90,7 @@ class OpService : Service() {
 
     companion object {
         private const val CHANNEL = "file_ops"
+        private const val ACTION_CANCEL = "com.mbnetwork.filemanager.OP_CANCEL"
         private const val NOTIF_ID = 4217
         private const val DONE_ID = 4218
     }
